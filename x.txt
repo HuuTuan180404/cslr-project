@@ -1,0 +1,46 @@
+                         ┌──────────────────────┐
+                         │      Dataset         │
+                         │                      │
+                         │ Video + Gloss + Text │
+                         └──────────┬───────────┘
+                                    │
+                                    ▼
+                           DataLoader / Collate
+                                    │
+                    ┌───────────────┴───────────────┐
+                    │                               │
+                    ▼                               ▼
+                 VIDEO                            GLOSS
+                    │                               │
+                    ▼                               ▼
+          ┌─────────────────┐             ┌─────────────────┐
+          │ Image Encoder   │             │ Text Encoder    │
+          │ Transformer     │             │ Mamba           │
+          └────────┬────────┘             └────────┬────────┘
+                   │                               │
+                   ▼                               ▼
+              H_video                         H_text
+              [B,T,Dv]                       [B,L,Dt]
+                   │                               │
+          ┌────────┴────────┐                     │
+          │                 │                     │
+          ▼                 ▼                     ▼
+      CTC Head          Pooling              Pooling
+          │                 │                     │
+          ▼                 ▼                     ▼
+      CTC logits        z_video               z_text
+          │                 │                     │
+          │                 └─────────┬───────────┘
+          │                           │
+          │                           ▼
+          │                  Contrastive Loss
+          │
+          ▼
+       CTC Loss
+          │
+          └──────────────┬────────────────────────┐
+                         ▼                        │
+                    Total Loss                    │
+                         │                        │
+                         ▼                        │
+                    Backpropagation ──────────────┘
