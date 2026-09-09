@@ -1,7 +1,3 @@
-# ============================================================
-# BASE CONFIGURATION
-# ============================================================
-
 # ------------------------------------------------------------
 # 1. PROJECT
 # ------------------------------------------------------------
@@ -14,11 +10,11 @@ project:
 # 2. DATASET
 # ------------------------------------------------------------
 dataset:
-  benchmark: null
-  root: ./data
-  metadata_root: ./metadata
+  benchmark: isharah500
+  root: ./data/${dataset.benchmark}
+  metadata_root: ./metadata/${dataset.benchmark}
 
-  use_rgb: false
+  use_rgb: true
 
   max_length: 256
 
@@ -31,7 +27,7 @@ dataset:
 # 3. POSE
 # ------------------------------------------------------------
 pose:
-  format: npy
+  format: pkl
 
   left_hand:
     enabled: true
@@ -44,18 +40,18 @@ pose:
     channels: 2
 
   face:
-    enabled: false
+    enabled: true
     num_joints: 19
     channels: 2
 
   body:
-    enabled: false
+    enabled: true
     num_joints: 25
     channels: 2
 
-  normalize: false
-  transform: false
-  augmentation: false
+  transform: true
+  normalize: true
+  augmentation: true
 
 
 rgb:
@@ -70,9 +66,10 @@ rgb:
     enabled: true
     channels: 3
 
-  normalize: false
-  transform: false
-  augmentation: false
+  transform: true
+  normalize: true
+  augmentation: true
+
 
 # ------------------------------------------------------------
 # 5. DATALOADER
@@ -110,10 +107,10 @@ model:
 # Loss
 # ============================================================
 
-loss:
-  name: "cross_entropy"
+# loss:
+#   name: "cross_entropy"
 
-  label_smoothing: 0.1
+#   label_smoothing: 0.1
 
 
 # ============================================================
@@ -148,20 +145,20 @@ scheduler:
 # Training
 # ============================================================
 
-training:
-  epochs: 50
+# training:
+#   epochs: 50
 
-  seed: 379
+#   seed: 379
 
-  device: "cuda"
+#   device: "cuda"
 
-  mixed_precision: true
+#   mixed_precision: true
 
-  gradient_clip:
-    enabled: false
-    max_norm: 1.0
+#   gradient_clip:
+#     enabled: false
+#     max_norm: 1.0
 
-  gradient_accumulation_steps: 1
+#   gradient_accumulation_steps: 1
 
 
 # ============================================================
@@ -204,6 +201,9 @@ checkpoint:
   save_last: true
 
   filename: "best_model.pth"
+
+  monitor: val_wer
+  mode: min
 
 
 # ============================================================
@@ -279,32 +279,6 @@ loss:
   ctc:
     blank: 0
     zero_infinity: true
-
-
-# ------------------------------------------------------------
-# 12. CHECKPOINT
-# ------------------------------------------------------------
-checkpoint:
-  save_dir: ./checkpoints
-
-  save_best: true
-
-  monitor: val_wer
-  mode: min
-
-  save_last: true
-
-
-# ------------------------------------------------------------
-# 13. LOGGING
-# ------------------------------------------------------------
-logging:
-  log_dir: ./logs
-
-  use_tensorboard: true
-
-  print_freq: 10
-
 
 # ------------------------------------------------------------
 # 14. DEVICE
