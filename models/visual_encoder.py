@@ -3,6 +3,7 @@ import torch.nn as nn
 from typing import Tuple
 
 from .utils import MLP
+from .transformer import TransformerEncoderLayer
 
 
 class PatchEmbedding(nn.Module):
@@ -42,64 +43,6 @@ class PatchEmbedding(nn.Module):
         x = self.proj(x) # (B, 3, H, W)
         x = x.flatten(2) # (B, D, H/P, W/P)
         x = x.transpose(1, 2) # (B, D, N) -> (B, N, D)
-        return x
-
-
-
-class VisualTransformerEncoderLayer(nn.Module):
-    """
-    ViT Transformer block.
-
-    Pre-Norm structure:
-
-        x
-        |
-        +--------------------+
-        |                    |
-        v                    |
-      LayerNorm              |
-        |                    |
-        v                    |
-    Self-Attention           |
-        |                    |
-      Dropout                |
-        |                    |
-        +------ (+) <--------+
-               |
-               v
-               x
-               |
-               +--------------------+
-               |                    |
-               v                    |
-            LayerNorm              |
-               |                    |
-               v                    |
-              MLP                  |
-               |                    |
-             Dropout               |
-               |                    |
-               +------ (+) <--------+
-                      |
-                      v
-                     out
-    """
-
-    def __init__(self, embed_dim: int, num_heads: int, act: str, mlp_ratio: float = 4.0, dropout: float = 0.0):
-        super().__init__()
-        self.norm1 = nn.LayerNorm(embed_dim)
-        self.attn = nn.MultiheadAttention(embed_dim=embed_dim, num_heads=num_heads, dropout=dropout)
-        self.norm2 = nn.LayerNorm(embed_dim)
-        self.mlp = MLP(embed_dim=embed_dim, mlp_ratio=mlp_ratio, act=act, dropout=dropout)
-
-    def forward(self, x: torch.Tensor, pre_norm: bool) -> torch.Tensor:
-        if pre_norm:
-            x_norm = self.norm1(x)
-            x = x + self.attn(x_norm, x_norm, x_norm)[0]
-            x = x + self.mlp(self.norm2(x))
-        else:
-            x = self.norm1(x + self.attn(x, x, x)[0])
-            x = self.norm2(x + self.mlp(x))
         return x
 
 
@@ -215,7 +158,7 @@ class VisualEncoder(nn.Module):
 
         # 4. Transformer Encoder
         self.blocks = nn.ModuleList([
-            VisualTransformerEncoderLayer(embed_dim=embed_dim, num_heads=num_heads, mlp_ratio=mlp_ratio, dropout=dropout)
+            TransformerEncoderLayer(d_model=embed_dim, num_heads=num_heads, act=act, mlp_ratio=mlp_ratio, dropout=dropout)
             for _ in range(depth)
         ])
 
@@ -260,22 +203,12 @@ class VisualEncoder(nn.Module):
 
             x = self.pos_dropout(x) # (B, 50, D)
 
-        x = self.blocks[self.count_layer](x, pre_norm=pre_norm)
+        x, _ = self.blocks[self.count_layer](x, pre_norm=pre_norm)
         self.count_layer += 1
 
         return x
 
 
-class HandVisualEncoder(nn.Module):
-    def __init__(self, image_size: int = 224, patch_size: int = 16, in_channels: int = 3, embed_dim: int = 768, depth: int = 12, num_heads: int = 12, mlp_ratio: float = 4.0, dropout: float = 0.0):
-        super().__init__()
-
-        self.lh_rgb = VisualEncoder()
-        self.lh_rgb = VisualEncoder()
-
-    def forward(self, lh_rgb: torch.Tensor, rh_rgb: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-
-        return lh_rgb, rh_rgb
 # ============================================================
 # Test
 # ============================================================
