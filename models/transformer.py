@@ -46,17 +46,17 @@ class TransformerEncoderLayer(nn.Module):
         return x, attn_weights
 
 class TransformerEncoder(nn.Module):
-    def __init__(self, d_model, num_heads, num_layers, mlp_ratio=4, dropout=0.1):
+    def __init__(self, d_model, num_heads, depth, mlp_ratio=4, dropout=0.1):
         super().__init__()
         self.layers = nn.ModuleList([
             TransformerEncoderLayer(d_model=d_model, num_heads=num_heads, mlp_ratio=mlp_ratio, dropout=dropout)
-            for _ in range(num_layers)
+            for _ in range(depth)
         ])
 
-    def forward(self, x, mask=None):
+    def forward(self, x, pre_norm: bool = False):
         attention_weights = []
         for layer in self.layers:
-            x, attn = layer(x, mask=mask)
+            x, attn = layer(x, pre_norm=pre_norm)
             attention_weights.append(attn)
 
         return x, attention_weights
