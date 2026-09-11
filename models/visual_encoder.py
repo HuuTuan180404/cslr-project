@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 from typing import Tuple
 
+from .utils import MLP
+
 
 class PatchEmbedding(nn.Module):
     """
@@ -20,9 +22,7 @@ class PatchEmbedding(nn.Module):
         super().__init__()
 
         if image_size % patch_size != 0:
-            raise ValueError(
-                "image_size must be divisible by patch_size"
-            )
+            raise ValueError("image_size must be divisible by patch_size")
 
         self.image_size = image_size
         self.patch_size = patch_size
@@ -39,43 +39,14 @@ class PatchEmbedding(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # (B, 3, H, W)
-        x = self.proj(x)
-
-        # (B, D, H/P, W/P)
-        x = x.flatten(2)
-
-        # (B, D, N) -> (B, N, D)
-        x = x.transpose(1, 2)
-
+        x = self.proj(x) # (B, 3, H, W)
+        x = x.flatten(2) # (B, D, H/P, W/P)
+        x = x.transpose(1, 2) # (B, D, N) -> (B, N, D)
         return x
 
 
-class MLP(nn.Module):
-    def __init__(self, embed_dim: int, mlp_ratio: float = 4.0, dropout: float = 0.0):
-        super().__init__()
 
-        hidden_dim = int(embed_dim * mlp_ratio)
-
-        self.fc1 = nn.Linear(embed_dim, hidden_dim)
-        self.act = nn.GELU()
-        self.dropout1 = nn.Dropout(dropout)
-
-        self.fc2 = nn.Linear(hidden_dim, embed_dim)
-        self.dropout2 = nn.Dropout(dropout)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.fc1(x)
-        x = self.act(x)
-        x = self.dropout1(x)
-
-        x = self.fc2(x)
-        x = self.dropout2(x)
-
-        return x
-
-
-class TransformerEncoderBlock(nn.Module):
+class VisualTransformerEncoderLayer(nn.Module):
     """
     ViT Transformer block.
 
@@ -114,12 +85,12 @@ class TransformerEncoderBlock(nn.Module):
                      out
     """
 
-    def __init__(self, embed_dim: int, num_heads: int, mlp_ratio: float = 4.0, dropout: float = 0.0):
+    def __init__(self, embed_dim: int, num_heads: int, act: str, mlp_ratio: float = 4.0, dropout: float = 0.0):
         super().__init__()
         self.norm1 = nn.LayerNorm(embed_dim)
         self.attn = nn.MultiheadAttention(embed_dim=embed_dim, num_heads=num_heads, dropout=dropout)
         self.norm2 = nn.LayerNorm(embed_dim)
-        self.mlp = MLP(embed_dim=embed_dim, mlp_ratio=mlp_ratio, dropout=dropout)
+        self.mlp = MLP(embed_dim=embed_dim, mlp_ratio=mlp_ratio, act=act, dropout=dropout)
 
     def forward(self, x: torch.Tensor, pre_norm: bool) -> torch.Tensor:
         if pre_norm:
@@ -161,14 +132,12 @@ class ViT(nn.Module):
 
         # 4. Transformer Encoder
         self.blocks = nn.ModuleList([
-            TransformerEncoderBlock(embed_dim=embed_dim, num_heads=num_heads, mlp_ratio=mlp_ratio, dropout=dropout)
+            VisualTransformerEncoderLayer(embed_dim=embed_dim, num_heads=num_heads, mlp_ratio=mlp_ratio, dropout=dropout)
             for _ in range(depth)
         ])
 
         self.norm = nn.LayerNorm(embed_dim)
-
         self.head = nn.Linear(embed_dim, num_classes)
-
         self._init_weights()
 
     def _init_weights(self):
@@ -217,23 +186,102 @@ class ViT(nn.Module):
         return logits
 
 
+class VisualEncoder(nn.Module):
+    """
+    Vision Transformer implemented from scratch.
+
+    Input:
+        x: (B, 3, 224, 224)
+
+    Output:
+        logits: (B, num_classes)
+    """
+
+    def __init__(self, image_size: int = 224, patch_size: int = 16, in_channels: int = 3, act: str = "gelu", embed_dim: int = 768, depth: int = 12, num_heads: int = 12, mlp_ratio: float = 4.0, dropout: float = 0.0):
+        super().__init__()
+
+        # 1. Patch Embedding
+        self.patch_embed = PatchEmbedding(image_size=image_size, patch_size=patch_size, in_channels=in_channels, embed_dim=embed_dim)
+
+        num_patches = self.patch_embed.num_patches
+
+        # 2. CLS Token: (1, 1, D)
+        self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
+
+        # 3. Positional Embedding [+1 because of CLS token]: (1, N+1, D)
+        self.pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, embed_dim))
+
+        self.pos_dropout = nn.Dropout(dropout)
+
+        # 4. Transformer Encoder
+        self.blocks = nn.ModuleList([
+            VisualTransformerEncoderLayer(embed_dim=embed_dim, num_heads=num_heads, mlp_ratio=mlp_ratio, dropout=dropout)
+            for _ in range(depth)
+        ])
+
+        self.count_layer = 0
+
+        self._init_weights()
+
+    def _init_weights(self):
+        nn.init.trunc_normal_(self.cls_token, std=0.02)
+        nn.init.trunc_normal_(self.pos_embed, std=0.02)
+
+        for module in self.modules():
+            if isinstance(module, nn.Linear):
+                nn.init.trunc_normal_(module.weight, std=0.02)
+                if module.bias is not None:
+                    nn.init.zeros_(module.bias)
+            elif isinstance(module, nn.LayerNorm):
+                nn.init.ones_(module.weight)
+                nn.init.zeros_(module.bias)
+
+    def forward(self, x: torch.Tensor, pre_norm: bool) -> torch.Tensor:
+        if self.count_layer == len(self.blocks):
+            raise ValueError(
+                f"count_layer ({self.count_layer}) must be smaller than "
+                f"the number of blocks ({len(self.blocks)})"
+            )
+
+        if self.count_layer == 0:
+            B = x.shape[0]
+
+            # 1. Image -> Patch Embeddings: (B, 3, 112, 112) -> (B, 49, 768)
+            x = self.patch_embed(x)
+
+            # 2. Add CLS token: (1, 1, D) -> (B, 1, D)
+            cls_token = self.cls_token.expand(B, -1, -1)
+
+            # Cat: (B, 1, D) + (B, 49, D) -> (B, 50, D)
+            x = torch.cat((cls_token, x), dim=1)
+
+            # 3. Add positional embedding (B, 50, D)
+            x = x + self.pos_embed
+
+            x = self.pos_dropout(x) # (B, 50, D)
+
+        x = self.blocks[self.count_layer](x, pre_norm=pre_norm)
+        self.count_layer += 1
+
+        return x
+
+
+class HandVisualEncoder(nn.Module):
+    def __init__(self, image_size: int = 224, patch_size: int = 16, in_channels: int = 3, embed_dim: int = 768, depth: int = 12, num_heads: int = 12, mlp_ratio: float = 4.0, dropout: float = 0.0):
+        super().__init__()
+
+        self.lh_rgb = VisualEncoder()
+        self.lh_rgb = VisualEncoder()
+
+    def forward(self, lh_rgb: torch.Tensor, rh_rgb: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+
+        return lh_rgb, rh_rgb
 # ============================================================
 # Test
 # ============================================================
-
 if __name__ == "__main__":
 
-    model = ViT(
-        image_size=112,
-        patch_size=16,
-        in_channels=3,
-        num_classes=1000,
-        embed_dim=768,
-        depth=12,
-        num_heads=12,
-        mlp_ratio=4.0,
-        dropout=0.1,
-    )
+    model = ViT(image_size=112, patch_size=16, in_channels=3, num_classes=1000, embed_dim=768, depth=12, num_heads=12, mlp_ratio=4.0, dropout=0.1)
 
     x = torch.randn(2, 3, 112, 112)
 
