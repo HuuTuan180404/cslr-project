@@ -3,8 +3,10 @@ from .utils import MLP
 
 
 class TransformerEncoderLayer(nn.Module):
-    def __init__(self, d_model, num_heads, act: str = "gelu", mlp_ratio=4, dropout=0.1):
+    def __init__(self, d_model, num_heads, act: str, mlp_ratio, dropout, pre_norm):
         super().__init__()
+
+        self.pre_norm = pre_norm
 
         self.attn = nn.MultiheadAttention(embed_dim=d_model, num_heads=num_heads)
         self.norm1 = nn.LayerNorm(d_model)
@@ -12,8 +14,8 @@ class TransformerEncoderLayer(nn.Module):
         self.norm2 = nn.LayerNorm(d_model)
         self.dropout = nn.Dropout(dropout)
 
-    def forward(self, x, pre_norm: bool = False):
-        if pre_norm:
+    def forward(self, x):
+        if self.pre_norm:
             # Attention
             residual = x
             x_norm = self.norm1(x)
@@ -46,17 +48,17 @@ class TransformerEncoderLayer(nn.Module):
         return x, attn_weights
 
 class TransformerEncoder(nn.Module):
-    def __init__(self, d_model, num_heads, depth, mlp_ratio=4, dropout=0.1):
+    def __init__(self, d_model, num_heads, depth, act: str, mlp_ratio=4, dropout=0.1, pre_norm: bool = False):
         super().__init__()
         self.layers = nn.ModuleList([
-            TransformerEncoderLayer(d_model=d_model, num_heads=num_heads, mlp_ratio=mlp_ratio, dropout=dropout)
+            TransformerEncoderLayer(d_model=d_model, num_heads=num_heads, act=act, mlp_ratio=mlp_ratio, dropout=dropout, pre_norm=pre_norm)
             for _ in range(depth)
         ])
 
-    def forward(self, x, pre_norm: bool = False):
+    def forward(self, x):
         attention_weights = []
         for layer in self.layers:
-            x, attn = layer(x, pre_norm=pre_norm)
+            x, attn = layer(x)
             attention_weights.append(attn)
 
         return x, attention_weights
