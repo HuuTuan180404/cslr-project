@@ -14,7 +14,7 @@ def get_activation(act: str) -> nn.Module:
 
 
 class MLP(nn.Module):
-    def __init__(self, d_model, mlp_ratio, act:str, dropout=0.1):
+    def __init__(self, d_model, mlp_ratio, act:str, dropout: float):
         super().__init__()
 
         hidden_dim = mlp_ratio * d_model
