@@ -15,23 +15,21 @@ class PoseEncoder(nn.Module):
     Output:
         x: (B, T, d_model)
     """
-    def __init__(self, input_dim: int, embed_ratio: int, num_heads: int, depth: int, mlp_ratio: int, dropout: float, act:str, max_seq_len: int):
+    def __init__(self, input_dim: int, embed_dim: int, num_heads: int, depth: int, mlp_ratio: int, dropout: float, act:str, max_seq_len: int, pre_norm: bool):
         super().__init__()
 
-        d_model = int(embed_ratio * input_dim)
-
         # Project pose features to Transformer dimension
-        self.input_proj = nn.Linear(input_dim, d_model)
+        self.input_proj = nn.Linear(input_dim, embed_dim)
 
         # Learnable positional embedding
-        self.pos_embedding = nn.Parameter(torch.randn(1, max_seq_len, d_model) * 0.02)
+        self.pos_embedding = nn.Parameter(torch.randn(1, max_seq_len, embed_dim) * 0.02)
 
         # Transformer Encoder
-        self.transformer = TransformerEncoder(d_model=d_model, num_heads=num_heads, depth=depth, mlp_ratio=mlp_ratio, dropout=dropout, act=act)
+        self.transformer = TransformerEncoder(d_model=embed_dim, num_heads=num_heads, depth=depth, mlp_ratio=mlp_ratio, dropout=dropout, act=act, pre_norm=pre_norm)
 
-        self.norm = nn.LayerNorm(d_model)
+        self.norm = nn.LayerNorm(embed_dim) if pre_norm else None
 
-    def forward(self, x, pre_norm: bool = False):
+    def forward(self, x):
         """
         Parameters
         ----------
@@ -65,10 +63,10 @@ class PoseEncoder(nn.Module):
         x = x + self.pos_embedding[:, :T, :]
 
         # Transformer
-        x, _ = self.transformer(x, pre_norm=pre_norm)
+        x, _ = self.transformer(x)
 
         # Final normalization
-        if pre_norm:
+        if self.norm is not None:
             x = self.norm(x)
 
         return x
