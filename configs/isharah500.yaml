@@ -28,7 +28,8 @@ dataset:
 # ------------------------------------------------------------
 pose:
   format: pkl
-  embed_ratio: 4
+  num_heads: 8
+  embed_dim: 256
 
   left_hand:
     num_joints: 21
