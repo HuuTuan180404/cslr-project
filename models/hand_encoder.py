@@ -65,7 +65,6 @@ class HandEncoderLayer(nn.Module):
         self.rh_mlp_dropout = nn.Dropout(dropout)
 
     def forward(self, lh_pose: torch.Tensor, rh_pose: torch.Tensor, lh_rgb: torch.Tensor | None, rh_rgb: torch.Tensor | None):
-
         # ============================================================
         # Pose <-> RGB Cross Attention
         # ============================================================
@@ -104,7 +103,6 @@ class HandEncoderLayer(nn.Module):
             # ========================================================
             # 2. LH <-> RH Cross Attention
             # ========================================================
-
             lh_residual = lh_attn_out
             rh_residual = rh_attn_out
 
@@ -119,7 +117,6 @@ class HandEncoderLayer(nn.Module):
             # ========================================================
             # 3. MLP
             # ========================================================
-
             lh_residual = lh_attn_out
             rh_residual = rh_attn_out
 
@@ -134,7 +131,6 @@ class HandEncoderLayer(nn.Module):
             rh_mlp_out = rh_residual + rh_mlp_out
 
         else: # POST-NORM
-
             # ========================================================
             # 1. Pose Self-Attention
             # ========================================================
@@ -152,7 +148,6 @@ class HandEncoderLayer(nn.Module):
             # ========================================================
             # 2. LH <-> RH Cross Attention
             # ========================================================
-
             lh_cross_out, rh_cross_out = self.lh_pose_rh_pose_attn(lh_attn_out, rh_attn_out)
 
             lh_cross_out = self.lh_cross_dropout(lh_cross_out)
@@ -165,7 +160,6 @@ class HandEncoderLayer(nn.Module):
             # ========================================================
             # 3. MLP
             # ========================================================
-
             lh_mlp_out = self.lh_mlp(lh_attn_out)
             rh_mlp_out = self.rh_mlp(rh_attn_out)
 
@@ -192,7 +186,6 @@ class HandEncoder(nn.Module):
     def __init__(self, hand_pose_input_dim, pose_embed_dim, pose_num_heads, rgb_image_size: int = 112, rgb_patch_size: int = 16, rgb_in_channels: int = 3, rgb_embed_dim: int = 768, act: str = "gelu", rgb_num_heads: int = 12, depth=4, dropout=0.1, pose_rgb_num_heads: int = 15, pose_pose_num_heads: int = 15, mlp_ratio:int = 4, use_rgb: bool = False, pre_norm: bool = False):
 
         super().__init__()
-        pose_embed_dim = hand_pose_input_dim * pose_embed_dim
 
         self.lh_pose_proj = nn.Linear(hand_pose_input_dim, pose_embed_dim)
         self.rh_pose_proj = nn.Linear(hand_pose_input_dim, pose_embed_dim)
@@ -225,7 +218,7 @@ class HandEncoder(nn.Module):
             mlp_ratio=mlp_ratio,
             dropout=dropout,
             pre_norm=pre_norm
-        ) if use_rgb else nn.Identity()
+        ) if use_rgb else None
 
     def forward(self, lh_pose, rh_pose, lh_rgb, rh_rgb):
 
