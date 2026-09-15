@@ -10,6 +10,8 @@ from torch.utils.data import DataLoader
 from datasets.isharah500 import ISharah500Dataset
 from utils.visualization import visualize_pose_sequence, visualize_rgb_sequence
 
+from models.image_encoder import ImageEncoder
+
 # ============================================================
 # Utils
 # ============================================================
@@ -29,16 +31,6 @@ def load_config(config_path: str) -> DictConfig:
     OmegaConf.resolve(config)
 
     return config
-
-
-def dict_to_namespace(value):
-    """Convert nested dictionaries to attribute-accessible namespaces."""
-    if isinstance(value, dict):
-        return SimpleNamespace(**{key: dict_to_namespace(item) for key, item in value.items()})
-
-    if isinstance(value, list):
-        return [dict_to_namespace(item) for item in value]
-    return value
 
 
 def set_seed(seed: int):
@@ -63,7 +55,6 @@ def get_device(config):
 # ============================================================
 # Dataset
 # ============================================================
-
 def build_dataset(config, phase: str):
     dataset_config = config["dataset"]
 
@@ -72,7 +63,7 @@ def build_dataset(config, phase: str):
     if dataset_name == "isharah500":
         pass
 
-    return ISharah500Dataset(args=dict_to_namespace(config), phase=phase)
+    return ISharah500Dataset(args=config, phase=phase)
 
 
 # ============================================================
@@ -94,18 +85,18 @@ def build_dataset(config, phase: str):
 # ============================================================
 
 # def build_model(config):
-    # model_config = config["model"]
+#     model_config = config["model"]
 
-    # model_name = model_config["name"].lower()
+#     model_name = model_config["name"].lower()
 
-    # if model_name == "siformer":
-    #     from models.siformer import Siformer
+#     if model_name == "siformer":
+#         from models.siformer import Siformer
 
-    #     model = Siformer(num_classes=model_config["num_classes"], num_hid=model_config["input_dim"])
+#         model = Siformer(num_classes=model_config["num_classes"], num_hid=model_config["input_dim"])
 
-    #     return model
+#         return model
 
-    # raise ValueError(f"Unknown model: {model_name}")
+#     raise ValueError(f"Unknown model: {model_name}")
 
 
 # ============================================================
@@ -241,7 +232,7 @@ def main(config_path: str):
     # --------------------------------------------------------
     config = load_config(config_path)
 
-    seed = config["project"]["seed"]
+    seed = config.project.seed
     set_seed(seed)
 
     # device = get_device(config)
@@ -259,25 +250,26 @@ def main(config_path: str):
     # --------------------------------------------------------
 
     train_dataset = build_dataset(config, phase="train")
-    dev_dataset = build_dataset(config, phase="dev")
-    test_dataset = build_dataset(config, phase="test")
-
-    print(f"Train samples: {len(train_dataset)}")
-    print(f"Dev samples  : {len(dev_dataset)}")
-    print(f"Test samples  : {len(test_dataset)}")
+    # dev_dataset = build_dataset(config, phase="dev")
+    # test_dataset = build_dataset(config, phase="test")
 
     sample = train_dataset[0]
+    lh_pose = sample["left"]
+    rh_pose = sample["right"]
 
-    print("="*10, type(sample)) # <class 'dict'>
-    print("="*10, sample.keys()) # dict_keys(['id', 'gloss', 'text', 'use_rgb', 'right', 'left', 'face', 'body', 'rgb_left', 'rgb_right'])
+    lh_rgb = sample["rgb_left"]
+    rh_rgb = sample["rgb_right"]
 
-    print("="*10, sample["left"].shape) # (T, H, W, 3)
-    print("="*10, sample["rgb_left"].shape) # (T, H, W, 3)
+    face = sample["face"]
+    body = sample["body"]
 
-    visualize_pose_sequence(sample["id"], sample["left"], sample["right"], sample["body"], sample["face"])
-    visualize_rgb_sequence(sample["id"], "left", sample["rgb_left"])
-    visualize_rgb_sequence(sample["id"], "right", sample["rgb_right"])
+    model = ImageEncoder(config=config)
+    
+    # print("="*10, type(sample)) # <class 'dict'>
+    # print("="*10, sample.keys()) # dict_keys(['id', 'gloss', 'text', 'use_rgb', 'right', 'left', 'face', 'body', 'rgb_left', 'rgb_right'])
 
+    # print("="*10, sample["left"].shape) # (T, H, W, 3)
+    # print("="*10, sample["rgb_left"].shape) # (T, H, W, 3)
 
     # print("="*10, xxxxxx) # xxxxx
     # print("="*10, xxxxxx) # xxxxx
@@ -356,6 +348,13 @@ def main(config_path: str):
     #                 "epoch": epoch, "model_state_dict": model.state_dict(), "optimizer_state_dict": optimizer.state_dict(), "val_accuracy": val_acc, "config": config, }, save_path)
 
     #         print(f"  → Best model saved: {save_path}")
+
+# def test_model(config_path: str):
+#     config = load_config(config_path)
+#     model = ImageEncoder(config=config)
+
+#     batch_size = 2
+#     lh
 
 
 # ============================================================
