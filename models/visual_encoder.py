@@ -140,7 +140,7 @@ class VisualEncoder(nn.Module):
         logits: (B, num_classes)
     """
 
-    def __init__(self, image_size: int = 224, patch_size: int = 16, in_channels: int = 3, act: str = "gelu", embed_dim: int = 768, depth: int = 12, num_heads: int = 12, mlp_ratio: float = 4.0, dropout: float = 0.0):
+    def __init__(self, image_size: int = 224, patch_size: int = 16, in_channels: int = 3, act: str = "gelu", embed_dim: int = 768, depth: int = 12, num_heads: int = 12, mlp_ratio: float = 4.0, dropout: float = 0.0, pre_norm: bool = False):
         super().__init__()
 
         # 1. Patch Embedding
@@ -158,7 +158,7 @@ class VisualEncoder(nn.Module):
 
         # 4. Transformer Encoder
         self.blocks = nn.ModuleList([
-            TransformerEncoderLayer(d_model=embed_dim, num_heads=num_heads, act=act, mlp_ratio=mlp_ratio, dropout=dropout)
+            TransformerEncoderLayer(d_model=embed_dim, num_heads=num_heads, act=act, mlp_ratio=mlp_ratio, dropout=dropout, pre_norm=pre_norm)
             for _ in range(depth)
         ])
 
@@ -203,7 +203,7 @@ class VisualEncoder(nn.Module):
 
             x = self.pos_dropout(x) # (B, 50, D)
 
-        x, _ = self.blocks[self.count_layer](x, pre_norm=pre_norm)
+        x, _ = self.blocks[self.count_layer](x)
         self.count_layer += 1
 
         return x
