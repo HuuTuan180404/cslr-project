@@ -144,14 +144,12 @@ class BaseSignLanguageDataset(Dataset, ABC):
             )
 
         return metadata
-
     # ==========================================================
     # Dataset interface
     # ==========================================================
     def __len__(self) -> int:
         """Number of samples."""
         return len(self.metadata)
-
 
     def __getitem__(self, index: int) -> Dict[str, Any]:
         """Load một sample.
