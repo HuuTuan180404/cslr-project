@@ -4,6 +4,7 @@ import torch.nn as nn
 from .hand_encoder import HandEncoder
 from .pose_encoder import PoseEncoder
 
+
 class ImageEncoder(nn.Module):
     """
     Transformer-based encoder for pose sequences.
@@ -14,6 +15,7 @@ class ImageEncoder(nn.Module):
     Output:
         x: (B, T, d_model)
     """
+
     def __init__(self, config):
         super().__init__()
 
@@ -27,59 +29,75 @@ class ImageEncoder(nn.Module):
 
         # hand
         self.hand_encoder = HandEncoder(
-            hand_pose_input_dim = config.pose.left_hand.num_joints * config.pose.left_hand.channels,
-            pose_embed_dim = config.pose.left_hand.embed_dim,
-            pose_num_heads = config.pose.left_hand.num_heads,
-            rgb_image_size = config.rgb.image_size,
-            rgb_patch_size = config.rgb.patch_size,
-            rgb_in_channels = config.rgb.channels,
-            rgb_embed_dim = config.rgb.embed_dim,
-            act = str(config.model.act),
-            rgb_num_heads = config.rgb.num_heads,
-            depth = config.model.depth,
-            dropout = config.model.dropout,
-            pose_rgb_num_heads = config.model.pose_rgb_num_heads,
-            pose_pose_num_heads = config.model.pose_pose_num_heads,
-            mlp_ratio = config.model.mlp_ratio,
-            use_rgb = config.model.use_rgb,
-            pre_norm = self.pre_norm
+            hand_pose_input_dim=config.pose.left_hand.num_joints * config.pose.left_hand.channels,
+            pose_embed_dim=config.pose.left_hand.embed_dim,
+            pose_num_heads=config.pose.left_hand.num_heads,
+            rgb_image_size=config.rgb.image_size,
+            rgb_patch_size=config.rgb.patch_size,
+            rgb_in_channels=config.rgb.channels,
+            rgb_embed_dim=config.rgb.embed_dim,
+            act=str(config.model.act),
+            rgb_num_heads=config.rgb.num_heads,
+            depth=config.model.depth,
+            dropout=config.model.dropout,
+            pose_rgb_num_heads=config.model.pose_rgb_num_heads,
+            pose_pose_num_heads=config.model.pose_pose_num_heads,
+            mlp_ratio=config.model.mlp_ratio,
+            use_rgb=config.model.use_rgb,
+            pre_norm=self.pre_norm,
         )
 
         # face
-        self.face_encoder = PoseEncoder(
-            input_dim = config.pose.face.num_joints * config.pose.face.channels,
-            embed_dim = config.pose.face.embed_dim,
-            num_heads = config.pose.face.num_heads,
-            depth = config.model.depth,
-            mlp_ratio = config.model.mlp_ratio,
-            dropout = config.model.dropout,
-            act = str(config.model.act),
-            max_seq_len = config.dataset.max_length,
-            pre_norm = self.pre_norm
-        ) if config.pose.face.enabled else None
+        self.face_encoder = (
+            PoseEncoder(
+                input_dim=config.pose.face.num_joints * config.pose.face.channels,
+                embed_dim=config.pose.face.embed_dim,
+                num_heads=config.pose.face.num_heads,
+                depth=config.model.depth,
+                mlp_ratio=config.model.mlp_ratio,
+                dropout=config.model.dropout,
+                act=str(config.model.act),
+                max_seq_len=config.dataset.max_length,
+                pre_norm=self.pre_norm,
+            )
+            if config.pose.face.enabled
+            else None
+        )
 
         # body
-        self.body_encoder = PoseEncoder(
-            input_dim = config.pose.body.num_joints * config.pose.body.channels,
-            embed_dim = config.pose.body.embed_dim,
-            num_heads = config.pose.body.num_heads,
-            depth = config.model.depth,
-            mlp_ratio = config.model.mlp_ratio,
-            dropout = config.model.dropout,
-            act = str(config.model.act),
-            max_seq_len = config.dataset.max_length,
-            pre_norm = self.pre_norm
-        ) if config.pose.body.enabled else None
+        self.body_encoder = (
+            PoseEncoder(
+                input_dim=config.pose.body.num_joints * config.pose.body.channels,
+                embed_dim=config.pose.body.embed_dim,
+                num_heads=config.pose.body.num_heads,
+                depth=config.model.depth,
+                mlp_ratio=config.model.mlp_ratio,
+                dropout=config.model.dropout,
+                act=str(config.model.act),
+                max_seq_len=config.dataset.max_length,
+                pre_norm=self.pre_norm,
+            )
+            if config.pose.body.enabled
+            else None
+        )
 
     def forward(self, lh_pose, rh_pose, lh_rgb: torch.Tensor | None, rh_rgb: torch.Tensor | None, face: torch.Tensor | None, body: torch.Tensor | None):
         lh_pose, rh_pose = self.hand_encoder(lh_pose, rh_pose, lh_rgb, rh_rgb)
 
-        if self.face_encoder is not None:
-            if face is not None:
-                face = self.face_encoder(face)
+        if (self.face_encoder is not None) and (face is not None):
+            face = self.face_encoder(face)
 
-        if self.body_encoder is not None:
-            if body is not None:
-                body = self.body_encoder(body)
+        if (self.body_encoder is not None) and (body is not None):
+            body = self.body_encoder(body)
 
-        return lh_pose
+        # Concat
+        features = [lh_pose, rh_pose]
+        if face is not None:
+            features.append(face)
+
+        if body is not None:
+            features.append(body)
+
+        fused = torch.cat(features, dim=-1)
+
+        return fused
