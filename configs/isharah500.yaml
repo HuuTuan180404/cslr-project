@@ -28,33 +28,34 @@ dataset:
 # ------------------------------------------------------------
 pose:
   format: pkl
-  num_heads: 8
-  embed_dim: 256
+  embed_dim: 768
+  num_heads: 12
 
   left_hand:
     num_joints: 21
     channels: 2
-    num_heads: 8
     embed_dim: 256
+    num_heads: 8
 
   right_hand:
     num_joints: 21
     channels: 2
     embed_dim: 256
+    num_heads: 8
 
   face:
     enabled: true
     num_joints: 19
     channels: 2
-    num_heads: 8
     embed_dim: 128
+    num_heads: 4
 
   body:
     enabled: true
     num_joints: 25
     channels: 2
-    num_heads: 8
     embed_dim: 128
+    num_heads: 4
 
   transform: true
   normalize: true
@@ -64,9 +65,9 @@ pose:
 rgb:
   image_size: 112
   format: jpg
-  patch_size: 16
+  patch_size: 8
   channels: 3
-  embed_dim: 768
+  embed_dim: 256
   num_heads: 8
 
   left_hand:
