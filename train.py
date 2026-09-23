@@ -12,6 +12,7 @@ from utils.visualization import visualize_pose_sequence, visualize_rgb_sequence
 
 from models.image_encoder import ImageEncoder
 
+
 # ============================================================
 # Utils
 # ============================================================
@@ -21,9 +22,7 @@ def load_config(config_path: str) -> DictConfig:
     config_path = Path(config_path)
 
     if not config_path.exists():
-        raise FileNotFoundError(
-            f"Config file does not exist: {config_path}"
-        )
+        raise FileNotFoundError(f"Config file does not exist: {config_path}")
 
     config = OmegaConf.load(config_path)
 
@@ -63,7 +62,7 @@ def build_dataset(config, phase: str):
     if dataset_name == "isharah500":
         pass
 
-    return ISharah500Dataset(args=config, phase=phase)
+    return ISharah500Dataset(config=config, phase=phase)
 
 
 # ============================================================
@@ -122,10 +121,10 @@ def build_dataset(config, phase: str):
 #     name = optimizer_config["name"].lower()
 
 #     if name == "adamw":
-#         return torch.optim.AdamW(model.parameters(), 
-#                                  lr=optimizer_config["learning_rate"], 
-#                                  weight_decay=optimizer_config["weight_decay"], 
-#                                  betas=tuple(optimizer_config.get("betas", [0.9, 0.999])), 
+#         return torch.optim.AdamW(model.parameters(),
+#                                  lr=optimizer_config["learning_rate"],
+#                                  weight_decay=optimizer_config["weight_decay"],
+#                                  betas=tuple(optimizer_config.get("betas", [0.9, 0.999])),
 #                                  eps=optimizer_config.get("eps", 1e-8))
 
 #     raise ValueError(f"Unknown optimizer: {optimizer_config['name']}")
@@ -195,7 +194,6 @@ def validate(model, dataloader, criterion, device):
     correct = 0
 
     for batch in dataloader:
-
         inputs = batch["pose"]
         labels = batch["label"]
 
@@ -224,6 +222,7 @@ def validate(model, dataloader, criterion, device):
 # ============================================================
 # Main
 # ============================================================
+
 
 def main(config_path: str):
 
@@ -264,7 +263,7 @@ def main(config_path: str):
     body = sample["body"]
 
     model = ImageEncoder(config=config)
-    
+
     # print("="*10, type(sample)) # <class 'dict'>
     # print("="*10, sample.keys()) # dict_keys(['id', 'gloss', 'text', 'use_rgb', 'right', 'left', 'face', 'body', 'rgb_left', 'rgb_right'])
 
@@ -343,11 +342,11 @@ def main(config_path: str):
 
     #         save_path = save_dir / config["checkpoint"]["filename"]
 
-
     #         torch.save({
     #                 "epoch": epoch, "model_state_dict": model.state_dict(), "optimizer_state_dict": optimizer.state_dict(), "val_accuracy": val_acc, "config": config, }, save_path)
 
     #         print(f"  → Best model saved: {save_path}")
+
 
 # def test_model(config_path: str):
 #     config = load_config(config_path)
@@ -362,7 +361,6 @@ def main(config_path: str):
 # ============================================================
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--config", type=str, default="./configs/isharah500.yaml")
