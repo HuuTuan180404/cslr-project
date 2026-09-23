@@ -29,10 +29,8 @@ logs/*
 !logs/.gitkeep
 experiments/*
 !experiments/.gitkeep
-data/*
-!data/.gitkeep
-data/*/*
-!data/*/.gitkeep
+data/**/*.jpg
+data/**/*.pkl
 
 # Jupyter
 .ipynb_checkpoints/
