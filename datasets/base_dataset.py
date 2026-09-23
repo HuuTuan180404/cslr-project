@@ -39,7 +39,7 @@ class BaseSignLanguageDataset(Dataset, ABC):
 
     SUPPORTED_PHASES = {"train", "dev", "test"}
 
-    def __init__(self, args, phase: str):
+    def __init__(self, config, phase: str):
         """
         Args:
             root:
@@ -67,26 +67,26 @@ class BaseSignLanguageDataset(Dataset, ABC):
         """
 
         super().__init__()
-        self.args = args
+        self.config = config
         self.phase = phase
 
-        self.data_root = Path(args.dataset.root)
-        self.benchmark = args.dataset.benchmark
-        self.metadata_dir = Path(args.dataset.metadata_root)
-        self.use_rgb = args.dataset.use_rgb
+        self.data_root = Path(config.dataset.root)
+        self.benchmark = config.dataset.benchmark
+        self.metadata_dir = Path(config.dataset.metadata_root)
+        self.use_rgb = config.dataset.use_rgb
 
         self._validate()
 
-        self.pose_transform = args.pose.transform
-        self.pose_normalize = args.pose.normalize
-        self.pose_augmentation = args.pose.augmentation
-        self.pose_extention = args.pose.format
+        self.pose_transform = config.pose.transform
+        self.pose_normalize = config.pose.normalize
+        self.pose_augmentation = config.pose.augmentation
+        self.pose_extention = config.pose.format
 
-        self.rgb_transform = args.rgb.transform
-        self.rgb_normalize = args.rgb.normalize
-        self.rgb_augmentation = args.rgb.augmentation
-        self.rgb_extention = args.rgb.format
-        self.image_size = args.rgb.image_size
+        self.rgb_transform = config.rgb.transform
+        self.rgb_normalize = config.rgb.normalize
+        self.rgb_augmentation = config.rgb.augmentation
+        self.rgb_extention = config.rgb.format
+        self.image_size = config.rgb.image_size
 
         # Metadata sẽ được load bởi class con
         self.metadata = self._load_metadata()
@@ -106,9 +106,8 @@ class BaseSignLanguageDataset(Dataset, ABC):
 
         if not self.data_root.exists():
             raise FileNotFoundError(
-                f"Benchmark directory does not exist: " f"{self.data_root}"
+                f"Benchmark directory does not exist: {self.data_root}"
             )
-
 
     # ==========================================================
     # Metadata
@@ -144,6 +143,7 @@ class BaseSignLanguageDataset(Dataset, ABC):
             )
 
         return metadata
+
     # ==========================================================
     # Dataset interface
     # ==========================================================
@@ -211,7 +211,6 @@ class BaseSignLanguageDataset(Dataset, ABC):
         """
         raise NotImplementedError
 
-
     @abstractmethod
     def _load_pose(self, path: Path) -> Dict[str, np.ndarray]:
         """
@@ -225,7 +224,6 @@ class BaseSignLanguageDataset(Dataset, ABC):
             }
         """
         raise NotImplementedError
-
 
     # ==========================================================
     # Path helpers
@@ -242,13 +240,9 @@ class BaseSignLanguageDataset(Dataset, ABC):
         path = self.data_root / "pose" / f"{sample_id}.{self.pose_extention}"
 
         if not path.exists():
-            warnings.warn(
-                f"Sample '{sample_id}' does not exist: {path}",
-                UserWarning
-            )
+            warnings.warn(f"Sample '{sample_id}' does not exist: {path}", UserWarning)
             return None
         return path
-
 
     def get_rgb_path(self, sample_id: str) -> Path:
         """
@@ -262,7 +256,6 @@ class BaseSignLanguageDataset(Dataset, ABC):
         path = self.data_root / "rgb" / sample_id
 
         return path
-
 
     def get_rgb_hand_path(self, sample_id: str, hand: str) -> Path:
         """
@@ -289,10 +282,9 @@ class BaseSignLanguageDataset(Dataset, ABC):
         """
 
         if hand not in {"left", "right"}:
-            raise ValueError(f"Invalid hand: {hand}. " f"Expected 'left' or 'right'.")
+            raise ValueError(f"Invalid hand: {hand}. Expected 'left' or 'right'.")
 
         return self.get_rgb_path(sample_id) / hand
-
 
     # ==========================================================
     # Metadata helpers
@@ -303,12 +295,10 @@ class BaseSignLanguageDataset(Dataset, ABC):
 
         return str(self.metadata.iloc[index]["sample_id"])
 
-
     def get_metadata(self, index: int) -> pd.Series:
         """Lấy metadata của một sample."""
 
         return self.metadata.iloc[index]
-
 
     def resize_images(self, images: np.ndarray) -> np.ndarray:
         """
