@@ -2,21 +2,51 @@ import torch
 import torch.nn as nn
 from typing import Tuple
 
-from .visual_encoder import VisualEncoder
+from .rgb_encoder import VisualEncoder
 from .utils import MLP
 from .attention import CrossAttention
 
 
 class HandEncoderLayer(nn.Module):
-    def __init__(self, pose_embed_dim, pose_num_heads, rgb_embed_dim: int = 768, act: str =  "gelu", mlp_ratio=4, dropout: float = 0.0, pose_rgb_num_heads: int = 15, pose_pose_num_heads: int = 15, use_rgb: bool = False, pre_norm: bool = False):
+    def __init__(
+        self,
+        pose_embed_dim,
+        pose_num_heads,
+        rgb_embed_dim,
+        act: str = "gelu",
+        mlp_ratio=4,
+        dropout: float = 0.0,
+        pose_rgb_num_heads: int = 15,
+        pose_pose_num_heads: int = 15,
+        use_rgb: bool = False,
+        pre_norm: bool = False,
+    ):
         super().__init__()
         self.pre_norm = pre_norm
 
         # ============================================================
         # Pose <-> RGB Cross Attention
         # ============================================================
-        self.lh_rgb_pose_cross = CrossAttention(x_dim=pose_embed_dim, y_dim=rgb_embed_dim, num_heads=pose_rgb_num_heads, dropout=dropout) if use_rgb else None
-        self.rh_rgb_pose_cross = CrossAttention(x_dim=pose_embed_dim, y_dim=rgb_embed_dim, num_heads=pose_rgb_num_heads, dropout=dropout) if use_rgb else None
+        self.lh_rgb_pose_cross = (
+            CrossAttention(
+                x_dim=pose_embed_dim,
+                y_dim=rgb_embed_dim,
+                num_heads=pose_rgb_num_heads,
+                dropout=dropout,
+            )
+            if use_rgb
+            else None
+        )
+        self.rh_rgb_pose_cross = (
+            CrossAttention(
+                x_dim=pose_embed_dim,
+                y_dim=rgb_embed_dim,
+                num_heads=pose_rgb_num_heads,
+                dropout=dropout,
+            )
+            if use_rgb
+            else None
+        )
 
         # ============================================================
         # 1. Pose Self-Attention
@@ -25,14 +55,24 @@ class HandEncoderLayer(nn.Module):
         # Left hand
         self.lh_norm1 = nn.LayerNorm(pose_embed_dim)
 
-        self.lh_attn = nn.MultiheadAttention(embed_dim=pose_embed_dim, num_heads=pose_num_heads, dropout=dropout, batch_first=True)
+        self.lh_attn = nn.MultiheadAttention(
+            embed_dim=pose_embed_dim,
+            num_heads=pose_num_heads,
+            dropout=dropout,
+            batch_first=True,
+        )
 
         self.lh_attn_dropout = nn.Dropout(dropout)
 
         # Right hand
         self.rh_norm1 = nn.LayerNorm(pose_embed_dim)
 
-        self.rh_attn = nn.MultiheadAttention(embed_dim=pose_embed_dim, num_heads=pose_num_heads, dropout=dropout, batch_first=True)
+        self.rh_attn = nn.MultiheadAttention(
+            embed_dim=pose_embed_dim,
+            num_heads=pose_num_heads,
+            dropout=dropout,
+            batch_first=True,
+        )
 
         self.rh_attn_dropout = nn.Dropout(dropout)
 
@@ -40,7 +80,12 @@ class HandEncoderLayer(nn.Module):
         # 2. Left Pose <-> Right Pose Cross Attention
         # ============================================================
 
-        self.lh_pose_rh_pose_attn = CrossAttention(x_dim=pose_embed_dim, y_dim=pose_embed_dim, num_heads=pose_pose_num_heads, dropout=dropout)
+        self.lh_pose_rh_pose_attn = CrossAttention(
+            x_dim=pose_embed_dim,
+            y_dim=pose_embed_dim,
+            num_heads=pose_pose_num_heads,
+            dropout=dropout,
+        )
 
         # Norm 2
         self.lh_norm2 = nn.LayerNorm(pose_embed_dim)
@@ -53,8 +98,12 @@ class HandEncoderLayer(nn.Module):
         # ============================================================
         # 3. Feed Forward Network
         # ============================================================
-        self.lh_mlp = MLP(d_model=pose_embed_dim, mlp_ratio=mlp_ratio, act=act, dropout=dropout)
-        self.rh_mlp = MLP(d_model=pose_embed_dim, mlp_ratio=mlp_ratio, act=act, dropout=dropout)
+        self.lh_mlp = MLP(
+            d_model=pose_embed_dim, mlp_ratio=mlp_ratio, act=act, dropout=dropout
+        )
+        self.rh_mlp = MLP(
+            d_model=pose_embed_dim, mlp_ratio=mlp_ratio, act=act, dropout=dropout
+        )
 
         # Norm 3
         self.lh_norm3 = nn.LayerNorm(pose_embed_dim)
@@ -64,17 +113,37 @@ class HandEncoderLayer(nn.Module):
         self.lh_mlp_dropout = nn.Dropout(dropout)
         self.rh_mlp_dropout = nn.Dropout(dropout)
 
-    def forward(self, lh_pose: torch.Tensor, rh_pose: torch.Tensor, lh_rgb: torch.Tensor | None, rh_rgb: torch.Tensor | None):
+    def forward(
+        self,
+        lh_pose: torch.Tensor,
+        rh_pose: torch.Tensor,
+        lh_rgb: torch.Tensor | None,
+        rh_rgb: torch.Tensor | None,
+    ):
+        B, L, D_p = lh_pose.shape
+        # _, _, N, D_r = lh_rgb.shape if lh_rgb is not None else (0, 0, 0, 0)
         # ============================================================
         # Pose <-> RGB Cross Attention
         # ============================================================
         if self.lh_rgb_pose_cross is not None:
+            # lh_rgb = lh_rgb.reshape(B * L, N, D_r)
+            lh_pose = lh_pose.reshape(B * L, 1, D_p)
+
             lh_pose, lh_rgb = self.lh_rgb_pose_cross(lh_pose, lh_rgb)
 
+            # lh_rgb = lh_rgb.reshape(B, L, N, D_r)
+            lh_pose = lh_pose.reshape(B, L, D_p)
+
         if self.rh_rgb_pose_cross is not None:
+            # rh_rgb = rh_rgb.reshape(B * L, N, D_r)
+            rh_pose = rh_pose.reshape(B * L, 1, D_p)
+
             rh_pose, rh_rgb = self.rh_rgb_pose_cross(rh_pose, rh_rgb)
 
-        if self.pre_norm: # PRE-NORM
+            # rh_rgb = rh_rgb.reshape(B, L, N, D_r)
+            rh_pose = rh_pose.reshape(B, L, D_p)
+
+        if self.pre_norm:  # PRE-NORM
             # ========================================================
             # 1. Pose Self-Attention
             # ========================================================
@@ -106,7 +175,9 @@ class HandEncoderLayer(nn.Module):
             lh_residual = lh_attn_out
             rh_residual = rh_attn_out
 
-            lh_cross_out, rh_cross_out = self.lh_pose_rh_pose_attn(lh_attn_out, rh_attn_out)
+            lh_cross_out, rh_cross_out = self.lh_pose_rh_pose_attn(
+                lh_attn_out, rh_attn_out
+            )
 
             lh_cross_out = self.lh_cross_dropout(lh_cross_out)
             rh_cross_out = self.rh_cross_dropout(rh_cross_out)
@@ -130,7 +201,7 @@ class HandEncoderLayer(nn.Module):
             lh_mlp_out = lh_residual + lh_mlp_out
             rh_mlp_out = rh_residual + rh_mlp_out
 
-        else: # POST-NORM
+        else:  # POST-NORM
             # ========================================================
             # 1. Pose Self-Attention
             # ========================================================
@@ -148,7 +219,9 @@ class HandEncoderLayer(nn.Module):
             # ========================================================
             # 2. LH <-> RH Cross Attention
             # ========================================================
-            lh_cross_out, rh_cross_out = self.lh_pose_rh_pose_attn(lh_attn_out, rh_attn_out)
+            lh_cross_out, rh_cross_out = self.lh_pose_rh_pose_attn(
+                lh_attn_out, rh_attn_out
+            )
 
             lh_cross_out = self.lh_cross_dropout(lh_cross_out)
             rh_cross_out = self.rh_cross_dropout(rh_cross_out)
@@ -183,42 +256,85 @@ class HandEncoder(nn.Module):
     Output:
         x: (B, T, d_model)
     """
-    def __init__(self, hand_pose_input_dim, pose_embed_dim, pose_num_heads, rgb_image_size: int = 112, rgb_patch_size: int = 16, rgb_in_channels: int = 3, rgb_embed_dim: int = 768, act: str = "gelu", rgb_num_heads: int = 12, depth=4, dropout=0.1, pose_rgb_num_heads: int = 15, pose_pose_num_heads: int = 15, mlp_ratio:int = 4, use_rgb: bool = False, pre_norm: bool = False):
+
+    def __init__(
+        self,
+        hand_pose_input_dim,
+        pose_embed_dim,
+        pose_num_heads,
+        rgb_image_size: int = 112,
+        rgb_patch_size: int = 16,
+        rgb_in_channels: int = 3,
+        rgb_embed_dim: int = 768,
+        act: str = "gelu",
+        rgb_num_heads: int = 12,
+        depth=4,
+        dropout=0.1,
+        pose_rgb_num_heads: int = 15,
+        pose_pose_num_heads: int = 15,
+        mlp_ratio: int = 4,
+        use_rgb: bool = False,
+        pre_norm: bool = False,
+    ):
 
         super().__init__()
 
         self.lh_pose_proj = nn.Linear(hand_pose_input_dim, pose_embed_dim)
         self.rh_pose_proj = nn.Linear(hand_pose_input_dim, pose_embed_dim)
 
-        self.layers = nn.ModuleList([
-            HandEncoderLayer(pose_embed_dim=pose_embed_dim, pose_num_heads=pose_num_heads, rgb_embed_dim=rgb_embed_dim, act=act, mlp_ratio=mlp_ratio, dropout=dropout, pose_rgb_num_heads=pose_rgb_num_heads, pose_pose_num_heads=pose_pose_num_heads, pre_norm=pre_norm)
-            for _ in range(depth)
-        ])
+        self.layers = nn.ModuleList(
+            [
+                HandEncoderLayer(
+                    pose_embed_dim=pose_embed_dim,
+                    pose_num_heads=pose_num_heads,
+                    rgb_embed_dim=rgb_embed_dim,
+                    act=act,
+                    mlp_ratio=mlp_ratio,
+                    dropout=dropout,
+                    pose_rgb_num_heads=pose_rgb_num_heads,
+                    pose_pose_num_heads=pose_pose_num_heads,
+                    pre_norm=pre_norm,
+                )
+                for _ in range(depth)
+            ]
+        )
 
         # ============================================================
         # RGB: Visual Stream
         # ============================================================
-        self.lh_rgb = VisualEncoder(image_size=rgb_image_size,
-            patch_size=rgb_patch_size,
-            in_channels=rgb_in_channels,
-            embed_dim=rgb_embed_dim,
-            depth=depth,
-            num_heads=rgb_num_heads,
-            mlp_ratio=mlp_ratio,
-            dropout=dropout,
-            pre_norm=pre_norm
-        ) if use_rgb else None
+        self.lh_rgb = (
+            VisualEncoder(
+                image_size=rgb_image_size,
+                patch_size=rgb_patch_size,
+                in_channels=rgb_in_channels,
+                act=act,
+                embed_dim=rgb_embed_dim,
+                depth=depth,
+                num_heads=rgb_num_heads,
+                mlp_ratio=mlp_ratio,
+                dropout=dropout,
+                pre_norm=pre_norm,
+            )
+            if use_rgb
+            else None
+        )
 
-        self.rh_rgb = VisualEncoder(image_size=rgb_image_size,
-            patch_size=rgb_patch_size,
-            in_channels=rgb_in_channels,
-            embed_dim=rgb_embed_dim,
-            depth=depth,
-            num_heads=rgb_num_heads,
-            mlp_ratio=mlp_ratio,
-            dropout=dropout,
-            pre_norm=pre_norm
-        ) if use_rgb else None
+        self.rh_rgb = (
+            VisualEncoder(
+                image_size=rgb_image_size,
+                patch_size=rgb_patch_size,
+                in_channels=rgb_in_channels,
+                act=act,
+                embed_dim=rgb_embed_dim,
+                depth=depth,
+                num_heads=rgb_num_heads,
+                mlp_ratio=mlp_ratio,
+                dropout=dropout,
+                pre_norm=pre_norm,
+            )
+            if use_rgb
+            else None
+        )
 
     def forward(self, lh_pose, rh_pose, lh_rgb, rh_rgb):
 
@@ -234,4 +350,3 @@ class HandEncoder(nn.Module):
             lh_pose, rh_pose, lh_rgb, rh_rgb = layer(lh_pose, rh_pose, lh_rgb, rh_rgb)
 
         return lh_pose, rh_pose
-    
