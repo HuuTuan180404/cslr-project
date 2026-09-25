@@ -1,11 +1,11 @@
 import torch
 import torch.nn as nn
 
-from .hand_encoder import HandEncoder
+from .hand_pose_encoder import HandEncoder
 from .pose_encoder import PoseEncoder
 
 
-class ImageEncoder(nn.Module):
+class PoseBranch(nn.Module):
     """
     Transformer-based encoder for pose sequences.
 
@@ -29,7 +29,8 @@ class ImageEncoder(nn.Module):
 
         # hand
         self.hand_encoder = HandEncoder(
-            hand_pose_input_dim=config.pose.left_hand.num_joints * config.pose.left_hand.channels,
+            hand_pose_input_dim=config.pose.left_hand.num_joints
+            * config.pose.left_hand.channels,
             pose_embed_dim=config.pose.left_hand.embed_dim,
             pose_num_heads=config.pose.left_hand.num_heads,
             rgb_image_size=config.rgb.image_size,
@@ -81,7 +82,21 @@ class ImageEncoder(nn.Module):
             else None
         )
 
-    def forward(self, lh_pose, rh_pose, lh_rgb: torch.Tensor | None, rh_rgb: torch.Tensor | None, face: torch.Tensor | None, body: torch.Tensor | None):
+    def forward(
+        self,
+        lh_pose,
+        rh_pose,
+        lh_rgb: torch.Tensor | None,
+        rh_rgb: torch.Tensor | None,
+        face: torch.Tensor | None,
+        body: torch.Tensor | None,
+    ):
+        # (B, L, J, 2) -> (B, L, J*2)
+        lh_pose = lh_pose.flatten(start_dim=-2)
+        rh_pose = rh_pose.flatten(start_dim=-2)
+        face = face.flatten(start_dim=-2) if face is not None else None
+        body = body.flatten(start_dim=-2) if body is not None else None
+
         lh_pose, rh_pose = self.hand_encoder(lh_pose, rh_pose, lh_rgb, rh_rgb)
 
         if (self.face_encoder is not None) and (face is not None):
