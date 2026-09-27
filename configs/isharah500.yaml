@@ -14,9 +14,9 @@ dataset:
   root: ./data/${dataset.benchmark}
   metadata_root: ./metadata/${dataset.benchmark}
 
-  use_rgb: true
+  use_rgb: false
 
-  max_length: 128
+  max_frames: 512
 
   phase:
     train: train
@@ -71,10 +71,10 @@ rgb:
   num_heads: 8
 
   left_hand:
-    enabled: true
+    enabled: $dataset.use_rgb
 
   right_hand:
-    enabled: true
+    enabled: $dataset.use_rgb
 
   transform: true
   normalize: true
@@ -85,13 +85,12 @@ rgb:
 # 5. DATALOADER
 # ------------------------------------------------------------
 dataloader:
-  batch_size: 16
+  batch_size: 2
   num_workers: 4
 
   shuffle: true
 
   pin_memory: true
-  drop_last: false
 
   persistent_workers: true
 
@@ -100,14 +99,10 @@ dataloader:
 # 7. MODEL
 # ------------------------------------------------------------
 model:
-  name: null
-
-  num_classes: null
-
+  name: MyModel
   use_rgb: ${dataset.use_rgb}
 
   act: gelu
-  depth: 2
   dropout: 0.1
 
   pre_norm: true
@@ -119,14 +114,22 @@ model:
   fusion:
     type: cross_attention
 
-# ============================================================
-# Loss
-# ============================================================
+  text_branch:
+    vocab_size: 390
+    embed_dim: 256
+    depth: 2
+    num_heads: 8
+    proj_dim: 128
+    state_dim: 16
+    conv_kernel: 3
+    expand: 2
+    padding_idx: 0
 
-# loss:
-#   name: "cross_entropy"
-
-#   label_smoothing: 0.1
+  pose_branch:
+    embed_dim: 768
+    depth: 4
+    num_heads: 8
+    proj_dim: 128
 
 
 # ============================================================
@@ -266,6 +269,7 @@ classifier:
 # ------------------------------------------------------------
 training:
   epochs: 100
+  device: cuda
 
   optimizer:
     name: adamw

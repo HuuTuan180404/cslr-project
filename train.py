@@ -7,10 +7,13 @@ import torch
 from omegaconf import OmegaConf, DictConfig
 from torch.utils.data import DataLoader
 
+from datasets.utils import cslr_collate_fn
 from datasets.isharah500 import ISharah500Dataset
-from utils.visualization import visualize_pose_sequence, visualize_rgb_sequence
+import torch.nn as nn
 
-from models.image_encoder import ImageEncoder
+from models.model import CSLRModel
+
+from utils.utils import get_config
 
 
 # ============================================================
@@ -235,39 +238,60 @@ def main(config_path: str):
     # Config
     # --------------------------------------------------------
     config = load_config(config_path)
-
+    max_frames = config.dataset.max_frames
     seed = config.project.seed
+
     set_seed(seed)
 
-    # device = get_device(config)
-
-    print("=" * 60, "Training configuration", "=" * 60)
-
-    print("=" * 60, f"Dataset : {config['dataset']['benchmark']}", "=" * 60)
-
-    # print(f"Model   : {config['model']['name']}")
-    # print(f"Device  : {device}")
-    # print(f"Seed    : {seed}")
+    device = get_device(config)
 
     # --------------------------------------------------------
     # Dataset
     # --------------------------------------------------------
-
     train_dataset = build_dataset(config, phase="train")
     # dev_dataset = build_dataset(config, phase="dev")
     # test_dataset = build_dataset(config, phase="test")
 
-    sample = train_dataset[0]
-    lh_pose = sample["left"]
-    rh_pose = sample["right"]
+    # --------------------------------------------------------
+    # DataLoader
+    # --------------------------------------------------------
+    train_loader = build_dataloader(
+        train_dataset,
+        config,
+        "train",
+        lambda batch: cslr_collate_fn(
+            batch, vocab=train_dataset.vocab, max_frames=max_frames
+        ),
+    )
+    # dev_loader = build_dataloader(
+    #     dev_dataset,
+    #     config,
+    #     "dev",
+    #     lambda batch: cslr_collate_fn(
+    #         batch, vocab=train_dataset.vocab, max_frames=max_frames
+    #     ),
+    # )
 
-    lh_rgb = sample["rgb_left"]
-    rh_rgb = sample["rgb_right"]
+    # batch = next(iter(train_loader))
 
-    face = sample["face"]
-    body = sample["body"]
+    # print(f"Train dataset size: {len(train_dataset)}")
+    # print(f"Train batches: {len(train_loader)}")
 
-    model = ImageEncoder(config=config)
+    # lh_pose = sample["left"].unsqueeze(0)
+    # rh_pose = sample["right"].unsqueeze(0)
+
+    # lh_rgb = sample["rgb_left"].unsqueeze(0)
+    # rh_rgb = sample["rgb_right"].unsqueeze(0)
+
+    # face = sample["face"].unsqueeze(0)
+    # body = sample["body"].unsqueeze(0)
+
+    model = build_model(config=config)
+    model = model.to(device)
+
+    train_one_epoch(model, train_loader, None, None, device)
+
+    # print("=" * 10, output.shape)  # <class 'dict'>
 
     # print("="*10, type(sample)) # <class 'dict'>
     # print("="*10, sample.keys()) # dict_keys(['id', 'gloss', 'text', 'use_rgb', 'right', 'left', 'face', 'body', 'rgb_left', 'rgb_right'])
