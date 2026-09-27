@@ -3,7 +3,7 @@ import torch.nn as nn
 from typing import Tuple
 
 from .rgb_encoder import VisualEncoder
-from .utils_ import MLP
+from models.mlp import MLP
 from .attention import CrossAttention
 
 

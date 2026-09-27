@@ -1,5 +1,5 @@
 import torch.nn as nn
-from utils.utils import get_activation
+from models.utils import get_activation
 
 
 class MLP(nn.Module):

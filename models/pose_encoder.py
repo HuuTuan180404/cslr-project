@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from .utils_ import MLP
+from models.mlp import MLP
 from models.transformer import TransformerEncoder
 
 

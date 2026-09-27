@@ -45,7 +45,7 @@ def set_seed(seed: int):
 
 
 def get_device(config):
-    device = config["training"]["device"]
+    device = config.training.device
 
     if device == "cuda" and not torch.cuda.is_available():
         print("CUDA is not available. Using CPU.")
@@ -58,9 +58,7 @@ def get_device(config):
 # Dataset
 # ============================================================
 def build_dataset(config, phase: str):
-    dataset_config = config["dataset"]
-
-    dataset_name = dataset_config["benchmark"].lower()
+    dataset_name = config.dataset.benchmark.lower()
 
     if dataset_name == "isharah500":
         pass
@@ -104,32 +102,34 @@ def build_model(config) -> nn.Module:
 # Loss
 # ============================================================
 
-# def build_loss(config):
-#     loss_config = config["loss"]
 
-#     if loss_config["name"].lower() == "cross_entropy":
-#         return torch.nn.CrossEntropyLoss(label_smoothing=loss_config.get("label_smoothing", 0.0))
+def build_loss(config):
+    if config.loss.name.lower() == "cross_entropy":
+        return torch.nn.CrossEntropyLoss(
+            label_smoothing=config.loss.get("label_smoothing", 0.0)
+        )
 
-#     raise ValueError(f"Unknown loss: {loss_config['name']}")
+    raise ValueError(f"Unknown loss: {config.loss.name}")
 
 
 # ============================================================
 # Optimizer
 # ============================================================
+def build_optimizer(model, config):
+    optimizer_config = config.optimizer
 
-# def build_optimizer(model, config):
-#     optimizer_config = config["optimizer"]
+    name = optimizer_config.name.lower()
 
-#     name = optimizer_config["name"].lower()
+    if name == "adamw":
+        return torch.optim.AdamW(
+            model.parameters(),
+            lr=optimizer_config.learning_rate,
+            weight_decay=optimizer_config.weight_decay,
+            betas=tuple(optimizer_config.get("betas", [0.9, 0.999])),
+            eps=optimizer_config.get("eps", 1e-8),
+        )
 
-#     if name == "adamw":
-#         return torch.optim.AdamW(model.parameters(),
-#                                  lr=optimizer_config["learning_rate"],
-#                                  weight_decay=optimizer_config["weight_decay"],
-#                                  betas=tuple(optimizer_config.get("betas", [0.9, 0.999])),
-#                                  eps=optimizer_config.get("eps", 1e-8))
-
-#     raise ValueError(f"Unknown optimizer: {optimizer_config['name']}")
+    raise ValueError(f"Unknown optimizer: {optimizer_config.name}")
 
 
 # ============================================================

@@ -4,7 +4,8 @@ import torch.nn as nn
 from .pose_branch import PoseBranch
 from .text_branch import TextBranch
 
-from utils.utils import get_config, get_activation
+from utils.utils import get_config
+from models.utils import get_activation
 
 
 class DualBranchCSLRModel(nn.Module):
@@ -23,8 +24,8 @@ class DualBranchCSLRModel(nn.Module):
         super().__init__()
 
         self.config = config
-        dropout = get_config(config, "model", "dropout")
-        act = get_config(config, "model", "act")
+        dropout = config.model.dropout
+        act = config.model.act
 
         # ------------------------------------------------------------
         # 1. Image branch
@@ -35,34 +36,31 @@ class DualBranchCSLRModel(nn.Module):
         # - left hand: pose left embed dim
         # - right hand: pose right embed dim
         # - body/face nếu enable
-        left_dim = get_config(config, "pose", "left_hand", "embed_dim")
-        right_dim = get_config(config, "pose", "right_hand", "embed_dim")
+        left_dim = config.pose.left_hand.embed_dim
+        right_dim = config.pose.right_hand.embed_dim
 
         face_dim = 0
         if config.pose.face.enabled:
-            face_dim = get_config(config, "pose", "face", "embed_dim")
+            face_dim = config.pose.face.embed_dim
 
         body_dim = 0
         if config.pose.body.enabled:
-            # if get_config(config, "pose", "body", "enabled"):
-            body_dim = get_config(config, "pose", "body", "embed_dim")
+            body_dim = config.pose.body.embed_dim
 
         self.pose_dim = left_dim + right_dim + face_dim + body_dim
 
         # ------------------------------------------------------------
         # 2. Text branch
         # ------------------------------------------------------------
-        self.vocab_size = get_config(config, "model", "text_branch", "vocab_size")
-        self.text_projection_dim = get_config(
-            config, "model", "text_branch", "proj_dim"
-        )
+        self.vocab_size = config.model.text_branch.vocab_size
+        self.text_projection_dim = config.model.text_branch.proj_dim
 
         self.text_encoder = TextBranch(config)
 
         # ------------------------------------------------------------
         # 3. Projection head cho visual branch
         # ------------------------------------------------------------
-        project_dim = get_config(config, "model", "pose_branch", "proj_dim")
+        project_dim = config.model.pose_branch.proj_dim
         self.image_proj = nn.Sequential(
             nn.Linear(self.pose_dim, project_dim),
             get_activation(act),

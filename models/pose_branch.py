@@ -51,7 +51,7 @@ class PoseBranch(nn.Module):
         # face
         self.face_encoder = (
             PoseEncoder(
-                input_dim=config.pose.face.num_joints * config.pose.face.channels,
+                in_dim=config.pose.face.num_joints * config.pose.face.channels,
                 embed_dim=config.pose.face.embed_dim,
                 num_heads=config.pose.face.num_heads,
                 depth=config.model.pose_branch.depth,
@@ -68,7 +68,7 @@ class PoseBranch(nn.Module):
         # body
         self.body_encoder = (
             PoseEncoder(
-                input_dim=config.pose.body.num_joints * config.pose.body.channels,
+                in_dim=config.pose.body.num_joints * config.pose.body.channels,
                 embed_dim=config.pose.body.embed_dim,
                 num_heads=config.pose.body.num_heads,
                 depth=config.model.pose_branch.depth,
