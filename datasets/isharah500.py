@@ -108,19 +108,19 @@ class ISharah500Dataset(BaseSignLanguageDataset):
         if not path.is_dir():
             raise FileNotFoundError(
                 f"RGB sample directory does not exist: {path}. "
-                "If you do not want to use RGB data, set use_rgb=False."
+                "If you do not want to use RGB data, set use_rgb=False in the config."
             )
 
         if self.config.rgb.left_hand and not (path / "left").exists():
             raise FileNotFoundError(
                 f"Left hand RGB directory does not exist: {path / 'left'}. "
-                "If you do not want to use RGB data, set use_rgb=False."
+                "If you do not want to use RGB data, set use_rgb=False in the config."
             )
 
         if self.config.rgb.right_hand and not (path / "right").exists():
             raise FileNotFoundError(
                 f"Right hand RGB directory does not exist: {path / 'right'}. "
-                "If you do not want to use RGB data, set use_rgb=False."
+                "If you do not want to use RGB data, set use_rgb=False in the config."
             )
 
         image_extensions = {".jpg", ".jpeg", ".png", ".bmp"}
