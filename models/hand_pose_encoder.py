@@ -3,7 +3,7 @@ import torch.nn as nn
 from typing import Tuple
 
 from .rgb_encoder import VisualEncoder
-from .utils import MLP
+from .utils_ import MLP
 from .attention import CrossAttention
 
 
@@ -13,13 +13,13 @@ class HandEncoderLayer(nn.Module):
         pose_embed_dim,
         pose_num_heads,
         rgb_embed_dim,
-        act: str = "gelu",
-        mlp_ratio=4,
-        dropout: float = 0.0,
-        pose_rgb_num_heads: int = 15,
-        pose_pose_num_heads: int = 15,
-        use_rgb: bool = False,
-        pre_norm: bool = False,
+        act,
+        mlp_ratio,
+        dropout,
+        pose_rgb_num_heads,
+        pose_pose_num_heads,
+        use_rgb,
+        pre_norm,
     ):
         super().__init__()
         self.pre_norm = pre_norm
@@ -113,13 +113,7 @@ class HandEncoderLayer(nn.Module):
         self.lh_mlp_dropout = nn.Dropout(dropout)
         self.rh_mlp_dropout = nn.Dropout(dropout)
 
-    def forward(
-        self,
-        lh_pose: torch.Tensor,
-        rh_pose: torch.Tensor,
-        lh_rgb: torch.Tensor | None,
-        rh_rgb: torch.Tensor | None,
-    ):
+    def forward(self, lh_pose, rh_pose, lh_rgb, rh_rgb):
         B, L, D_p = lh_pose.shape
         # _, _, N, D_r = lh_rgb.shape if lh_rgb is not None else (0, 0, 0, 0)
         # ============================================================
@@ -262,19 +256,19 @@ class HandEncoder(nn.Module):
         hand_pose_input_dim,
         pose_embed_dim,
         pose_num_heads,
-        rgb_image_size: int = 112,
-        rgb_patch_size: int = 16,
-        rgb_in_channels: int = 3,
-        rgb_embed_dim: int = 768,
-        act: str = "gelu",
-        rgb_num_heads: int = 12,
-        depth=4,
-        dropout=0.1,
-        pose_rgb_num_heads: int = 15,
-        pose_pose_num_heads: int = 15,
-        mlp_ratio: int = 4,
-        use_rgb: bool = False,
-        pre_norm: bool = False,
+        rgb_image_size,
+        rgb_patch_size,
+        rgb_in_channels,
+        rgb_embed_dim,
+        act,
+        rgb_num_heads,
+        depth,
+        dropout,
+        pose_rgb_num_heads,
+        pose_pose_num_heads,
+        mlp_ratio,
+        use_rgb,
+        pre_norm,
     ):
 
         super().__init__()
@@ -293,6 +287,7 @@ class HandEncoder(nn.Module):
                     dropout=dropout,
                     pose_rgb_num_heads=pose_rgb_num_heads,
                     pose_pose_num_heads=pose_pose_num_heads,
+                    use_rgb=use_rgb,
                     pre_norm=pre_norm,
                 )
                 for _ in range(depth)

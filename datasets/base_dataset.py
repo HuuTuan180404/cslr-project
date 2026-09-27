@@ -1,5 +1,6 @@
 # datasets/base_dataset.py
 
+import torch
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -39,7 +40,7 @@ class BaseSignLanguageDataset(Dataset, ABC):
 
     SUPPORTED_PHASES = {"train", "dev", "test"}
 
-    def __init__(self, config, phase: str):
+    def __init__(self, config, phase: str, vocab=None):
         """
         Args:
             root:
@@ -91,9 +92,15 @@ class BaseSignLanguageDataset(Dataset, ABC):
         # Metadata sẽ được load bởi class con
         self.metadata = self._load_metadata()
 
-    # ==========================================================
-    # Validation
-    # ==========================================================
+        if self.phase == "train":
+            self.vocab = self._build_vocab()
+            self.vocab["<unk>"] = len(self.vocab) + 1  # Unknown token
+            self.vocab["<pad>"] = 0  # Padding token
+        else:
+            if self.phase in {"dev", "test"} and vocab is None:
+                raise ValueError("Vocab must be provided for dev/test phase.")
+            else:
+                self.vocab = vocab
 
     def _validate(self):
         """Kiểm tra cấu hình Dataset."""
@@ -108,10 +115,6 @@ class BaseSignLanguageDataset(Dataset, ABC):
             raise FileNotFoundError(
                 f"Benchmark directory does not exist: {self.data_root}"
             )
-
-    # ==========================================================
-    # Metadata
-    # ==========================================================
 
     def _load_metadata(self) -> pd.DataFrame:
         """
@@ -144,11 +147,7 @@ class BaseSignLanguageDataset(Dataset, ABC):
 
         return metadata
 
-    # ==========================================================
-    # Dataset interface
-    # ==========================================================
     def __len__(self) -> int:
-        """Number of samples."""
         return len(self.metadata)
 
     def __getitem__(self, index: int) -> Dict[str, Any]:
@@ -165,39 +164,71 @@ class BaseSignLanguageDataset(Dataset, ABC):
 
                 'right': <(T, J, C)>,
                 'left': <(T, J, C)>,
-                'face': <(T, J, C)>,
-                'body': <(T, J, C)>
+                'face': <(T, J, C)> | None,
+                'body': <(T, J, C)> | None,
 
-                "rgb_left": <(T, H, W, 3)> / None,
-                "rgb_right": <(T, H, W, 3)> / None
+                "rgb_left": <(T, H, W, 3)> | None,
+                "rgb_right": <(T, H, W, 3)> | None
 
                 "length": 120, ?
             }
         """
+
         row = self.metadata.iloc[index]
 
         sample_id = self.get_sample_id(row.name)
 
         sample: Dict[str, Any] = {
             "id": sample_id,
-            "gloss": self.get_optional_value(row, "gloss", default=[]),
+            "gloss": self.get_optional_value(row, "gloss", default="").split(),
             "text": self.get_optional_value(row, "text", default=""),
             "use_rgb": self.use_rgb,
         }
 
+        # =========================
+        # Pose
+        # =========================
         pose_path = self.get_pose_path(sample_id)
-        if pose_path is not None:
-            sample = sample | self._load_pose(pose_path)
 
+        if pose_path is not None:
+            pose_data = self._load_pose(pose_path)
+
+            for key, value in pose_data.items():
+                if value is not None:
+                    pose_data[key] = torch.as_tensor(value, dtype=torch.float32)
+
+            sample.update(pose_data)
+
+        # =========================
+        # RGB
+        # =========================
         if self.use_rgb:
             rgb_path = self.get_rgb_path(sample_id)
-            return sample | self._load_rgb(rgb_path)
+
+            rgb_data = self._load_rgb(rgb_path)
+
+            for key, value in rgb_data.items():
+                if value is not None:
+                    rgb_data[key] = torch.as_tensor(value, dtype=torch.float32)
+
+                    # (T, H, W, C) -> (T, C, H, W)
+                    if key in ["rgb_left", "rgb_right"]:
+                        rgb_data[key] = rgb_data[key].permute(0, 3, 1, 2)
+
+            sample.update(rgb_data)
+
+        # =========================
+        # Length
+        # =========================
+        for key in ["right", "left", "face", "body", "rgb_left", "rgb_right"]:
+            if sample.get(key) is not None:
+                sample["length"] = sample[key].shape[0]
+                break
+            else:
+                sample["length"] = 0
 
         return sample
 
-    # ==========================================================
-    # Sample loading
-    # ==========================================================
     @abstractmethod
     def _load_rgb(self, path: Path) -> Dict[str, np.ndarray]:
         """
@@ -225,9 +256,6 @@ class BaseSignLanguageDataset(Dataset, ABC):
         """
         raise NotImplementedError
 
-    # ==========================================================
-    # Path helpers
-    # ==========================================================
     def get_pose_path(self, sample_id: str) -> Path:
         """
         Trả về path tới pose của sample.
@@ -286,10 +314,6 @@ class BaseSignLanguageDataset(Dataset, ABC):
 
         return self.get_rgb_path(sample_id) / hand
 
-    # ==========================================================
-    # Metadata helpers
-    # ==========================================================
-
     def get_sample_id(self, index: int) -> str:
         """Lấy sample_id theo index."""
 
@@ -325,10 +349,6 @@ class BaseSignLanguageDataset(Dataset, ABC):
 
         return resized_frames
 
-    # ==========================================================
-    # Debug
-    # ==========================================================
-
     def __repr__(self) -> str:
         return (
             f"{self.__class__.__name__}("
@@ -345,3 +365,10 @@ class BaseSignLanguageDataset(Dataset, ABC):
         if column not in row.index or pd.isna(row[column]):
             return default
         return row[column]
+
+    def _build_vocab(self):
+        glosses = set()
+        for gloss in self.metadata["gloss"]:
+            if pd.notna(gloss):
+                glosses.update(gloss.split())
+        return {g: i + 1 for i, g in enumerate(sorted(glosses))}

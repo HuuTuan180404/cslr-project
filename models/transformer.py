@@ -1,9 +1,10 @@
 import torch.nn as nn
-from .utils import MLP
+
+from .mlp import MLP
 
 
 class TransformerEncoderLayer(nn.Module):
-    def __init__(self, d_model, num_heads, act: str, mlp_ratio, dropout, pre_norm):
+    def __init__(self, d_model, num_heads, act, mlp_ratio, dropout, pre_norm):
         super().__init__()
 
         self.pre_norm = pre_norm
@@ -32,7 +33,7 @@ class TransformerEncoderLayer(nn.Module):
 
             x = residual + self.dropout(ff_output)
 
-        else: # Post-Norm
+        else:  # Post-Norm
             # Attention
             attn_output, attn_weights = self.attn(x, x, x)
 
@@ -47,13 +48,32 @@ class TransformerEncoderLayer(nn.Module):
 
         return x, attn_weights
 
+
 class TransformerEncoder(nn.Module):
-    def __init__(self, d_model, num_heads, depth, act: str, mlp_ratio=4, dropout=0.1, pre_norm: bool = False):
+    def __init__(
+        self,
+        d_model,
+        num_heads,
+        depth,
+        act: str,
+        mlp_ratio=4,
+        dropout=0.1,
+        pre_norm: bool = False,
+    ):
         super().__init__()
-        self.layers = nn.ModuleList([
-            TransformerEncoderLayer(d_model=d_model, num_heads=num_heads, act=act, mlp_ratio=mlp_ratio, dropout=dropout, pre_norm=pre_norm)
-            for _ in range(depth)
-        ])
+        self.layers = nn.ModuleList(
+            [
+                TransformerEncoderLayer(
+                    d_model=d_model,
+                    num_heads=num_heads,
+                    act=act,
+                    mlp_ratio=mlp_ratio,
+                    dropout=dropout,
+                    pre_norm=pre_norm,
+                )
+                for _ in range(depth)
+            ]
+        )
 
     def forward(self, x):
         attention_weights = []

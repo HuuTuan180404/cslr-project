@@ -3,28 +3,36 @@ import torch.nn as nn
 from typing import Tuple
 import math
 
+
 class CrossAttention(nn.Module):
-    def __init__(self, x_dim: int, y_dim: int, num_heads: int, dropout: float = 0.1, **kwargs):
+    def __init__(self, x_dim, y_dim, num_heads, dropout, **kwargs):
         super().__init__()
 
         d_model = (x_dim + y_dim) // 2
 
         if d_model % num_heads != 0:
-            raise ValueError(   
-                f"d_model ({d_model}) must be divisible by "
-                f"num_heads ({num_heads})."
+            raise ValueError(
+                f"d_model ({d_model}) must be divisible by num_heads ({num_heads})."
             )
 
         self.x_proj = nn.Identity() if x_dim == d_model else nn.Linear(x_dim, d_model)
         self.y_proj = nn.Identity() if y_dim == d_model else nn.Linear(y_dim, d_model)
 
-        self.x_to_y_cross_attn = nn.MultiheadAttention(embed_dim=d_model, num_heads=num_heads, dropout=dropout, batch_first=True)
-        self.y_to_x_cross_attn = nn.MultiheadAttention(embed_dim=d_model, num_heads=num_heads, dropout=dropout, batch_first=True)
+        self.x_to_y_cross_attn = nn.MultiheadAttention(
+            embed_dim=d_model, num_heads=num_heads, dropout=dropout, batch_first=True
+        )
+        self.y_to_x_cross_attn = nn.MultiheadAttention(
+            embed_dim=d_model, num_heads=num_heads, dropout=dropout, batch_first=True
+        )
 
-        self.x_proj_out = nn.Identity() if d_model == x_dim else nn.Linear(d_model, x_dim)
-        self.y_proj_out = nn.Identity() if d_model == y_dim else nn.Linear(d_model, y_dim)
+        self.x_proj_out = (
+            nn.Identity() if d_model == x_dim else nn.Linear(d_model, x_dim)
+        )
+        self.y_proj_out = (
+            nn.Identity() if d_model == y_dim else nn.Linear(d_model, y_dim)
+        )
 
-    def forward(self, x: torch.Tensor, y: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, x, y) -> Tuple[torch.Tensor, torch.Tensor]:
         # x: (B, Tx, x_dim)
         # y: (B, Ty, y_dim)
 
@@ -44,7 +52,9 @@ class ProbMask:
     def __init__(self, B, H, L, index, scores, device="cpu"):
         _mask = torch.ones(L, scores.shape[-1], dtype=torch.bool).to(device).triu(1)
         _mask_ex = _mask[None, None, :].expand(B, H, L, scores.shape[-1])
-        indicator = _mask_ex[torch.arange(B)[:, None, None], torch.arange(H)[None, :, None], index, :].to(device)
+        indicator = _mask_ex[
+            torch.arange(B)[:, None, None], torch.arange(H)[None, :, None], index, :
+        ].to(device)
         self._mask = indicator.view(scores.shape).to(device)
 
     @property
@@ -53,8 +63,15 @@ class ProbMask:
 
 
 class ProbAttention(nn.Module):
-    def __init__(self, mask_flag=False, factor=5, scale=None, attention_dropout=0.0, output_attention=True):
-        super(ProbAttention, self).__init__()
+    def __init__(
+        self,
+        mask_flag=False,
+        factor=5,
+        scale=None,
+        attention_dropout=0.0,
+        output_attention=True,
+    ):
+        super().__init__()
         self.factor = factor
         self.scale = scale
         self.mask_flag = mask_flag
@@ -68,16 +85,22 @@ class ProbAttention(nn.Module):
 
         # calculate the sampled Q_K
         K_expand = K.unsqueeze(-3).expand(B, H, L_Q, L_K, E)
-        index_sample = torch.randint(L_K, (L_Q, sample_k))  # real U = U_part(factor*ln(L_k))*L_q
+        index_sample = torch.randint(
+            L_K, (L_Q, sample_k)
+        )  # real U = U_part(factor*ln(L_k))*L_q
         K_sample = K_expand[:, :, torch.arange(L_Q).unsqueeze(1), index_sample, :]
-        Q_K_sample = torch.matmul(Q.unsqueeze(-2), K_sample.transpose(-2, -1)).squeeze(-2)
+        Q_K_sample = torch.matmul(Q.unsqueeze(-2), K_sample.transpose(-2, -1)).squeeze(
+            -2
+        )
 
         # find the Top_k query with sparisty measurement
         M = Q_K_sample.max(-1)[0] - torch.div(Q_K_sample.sum(-1), L_K)
         M_top = M.topk(n_top, sorted=False)[1]
 
         # use the reduced Q to calculate Q_K
-        Q_reduce = Q[torch.arange(B)[:, None, None], torch.arange(H)[None, :, None], M_top, :]  # factor*ln(L_q)
+        Q_reduce = Q[
+            torch.arange(B)[:, None, None], torch.arange(H)[None, :, None], M_top, :
+        ]  # factor*ln(L_q)
         Q_K = torch.matmul(Q_reduce, K.transpose(-2, -1))  # factor*ln(L_q)*L_k
 
         return Q_K, M_top
@@ -103,11 +126,15 @@ class ProbAttention(nn.Module):
         attn = torch.softmax(scores, dim=-1)  # nn.Softmax(dim=-1)(scores)
         attn = self.dropout(attn)
 
-        context_in[torch.arange(B)[:, None, None], torch.arange(H)[None, :, None], index, :] = torch.matmul(attn, V).type_as(context_in)
+        context_in[
+            torch.arange(B)[:, None, None], torch.arange(H)[None, :, None], index, :
+        ] = torch.matmul(attn, V).type_as(context_in)
 
         if self.output_attention:
             attns = (torch.ones([B, H, L_V, L_V]) / L_V).type_as(attn).to(attn.device)
-            attns[torch.arange(B)[:, None, None], torch.arange(H)[None, :, None], index, :] = attn
+            attns[
+                torch.arange(B)[:, None, None], torch.arange(H)[None, :, None], index, :
+            ] = attn
             return (context_in, attns)
         else:
             return (context_in, None)
@@ -136,6 +163,8 @@ class ProbAttention(nn.Module):
         context = self._get_initial_context(values, L_Q)
 
         # update the context with selected top_k queries
-        context, attn = self._update_context(context, values, scores_top, index, L_Q, attn_mask)
+        context, attn = self._update_context(
+            context, values, scores_top, index, L_Q, attn_mask
+        )
 
         return context.transpose(2, 1).contiguous(), attn

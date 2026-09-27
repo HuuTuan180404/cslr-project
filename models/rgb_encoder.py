@@ -39,7 +39,7 @@ class PatchEmbedding(nn.Module):
             stride=patch_size,
         )
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x) -> torch.Tensor:
         # (B, C, H, W)
         x = self.proj(x)
 
@@ -80,11 +80,11 @@ class VisualEncoder(nn.Module):
         in_channels,
         act,
         embed_dim,
-        depth: int = 6,
-        num_heads: int = 8,
-        mlp_ratio: float = 4.0,
-        dropout: float = 0.0,
-        pre_norm: bool = False,
+        depth,
+        num_heads,
+        mlp_ratio,
+        dropout,
+        pre_norm,
     ):
         super().__init__()
         self.count_layer = 0
@@ -145,7 +145,7 @@ class VisualEncoder(nn.Module):
                 nn.init.ones_(module.weight)
                 nn.init.zeros_(module.bias)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x) -> torch.Tensor:
         if self.count_layer == 0:
             # (B, L, C, H, W)
             B, L, C, H, W = x.shape

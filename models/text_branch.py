@@ -3,6 +3,27 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mamba_ssm.modules.mamba_simple import Mamba
 
+"""
+gloss_ids [B, L]
+      │
+      ▼
+   Embedding
+      │
+      ▼
+   Mamba × N
+      │
+      ▼
+token_features [B, L, D]
+      │
+      │ masked mean pooling
+      ▼
+sentence_features [B, D]
+      │
+      │ projection head
+      ▼
+z_text [B, E]
+"""
+
 
 class MambaTextEncoder(nn.Module):
     """
@@ -21,7 +42,7 @@ class MambaTextEncoder(nn.Module):
         self,
         vocab_size,
         embed_dim,
-        mamba_layers,
+        depth,
         state_dim,
         conv_kernel,
         expand,
@@ -56,13 +77,13 @@ class MambaTextEncoder(nn.Module):
                     d_conv=conv_kernel,
                     expand=expand,
                 )
-                for _ in range(mamba_layers)
+                for _ in range(depth)
             ]
         )
 
         # LayerNorm after each Mamba block
         self.norm_layers = nn.ModuleList(
-            [nn.LayerNorm(embed_dim) for _ in range(mamba_layers)]
+            [nn.LayerNorm(embed_dim) for _ in range(depth)]
         )
 
         self.dropout = nn.Dropout(dropout)
@@ -153,24 +174,21 @@ class MambaTextEncoder(nn.Module):
         # --------------------------------------------------
         # Sentence-level representation
         # --------------------------------------------------
-        sentence_features = self.masked_mean_pooling(
-            x,
-            attention_mask,
-        )
+        sentence_features = self.masked_mean_pooling(x, attention_mask)
         # [B, D]
 
         return x, sentence_features
 
 
 class ProjectionHead(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, dropout):
+    def __init__(self, in_dim, hidden_dim, out_dim, dropout):
         super().__init__()
 
         self.projection = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim),
+            nn.Linear(in_dim, hidden_dim),
             nn.GELU(),
             nn.Dropout(dropout),
-            nn.Linear(hidden_dim, output_dim),
+            nn.Linear(hidden_dim, out_dim),
         )
 
     def forward(self, x):
@@ -187,46 +205,34 @@ class ProjectionHead(nn.Module):
 
 
 class TextBranch(nn.Module):
-    def __init__(
-        self,
-        vocab_size,
-        embed_dim,
-        mamba_layers,
-        projection_dim,
-        state_dim,
-        conv_kernel,
-        expand,
-        dropout,
-        padding_idx,
-    ):
+    def __init__(self, config):
         super().__init__()
 
         self.encoder = MambaTextEncoder(
-            vocab_size=vocab_size,
-            embed_dim=embed_dim,
-            mamba_layers=mamba_layers,
-            padding_idx=padding_idx,
-            state_dim=state_dim,
-            conv_kernel=conv_kernel,
-            expand=expand,
-            dropout=dropout,
+            vocab_size=config.model.text_branch.vocab_size,
+            embed_dim=config.model.text_branch.embed_dim,
+            depth=config.model.text_branch.depth,
+            padding_idx=config.model.text_branch.padding_idx,
+            state_dim=config.model.text_branch.state_dim,
+            conv_kernel=config.model.text_branch.conv_kernel,
+            expand=config.model.text_branch.expand,
+            dropout=config.model.dropout,
         )
 
         self.projection = ProjectionHead(
-            input_dim=embed_dim,
-            hidden_dim=embed_dim,
-            output_dim=projection_dim,
-            dropout=dropout,
+            in_dim=config.model.text_branch.embed_dim,
+            hidden_dim=config.model.text_branch.embed_dim,
+            out_dim=config.model.text_branch.proj_dim,
+            dropout=config.model.dropout,
         )
 
     def forward(self, input_ids, attention_mask):
 
-        token_features, sentence_features = self.encoder(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
+        token_features, sentence_features = self.encoder.forward(
+            input_ids=input_ids, attention_mask=attention_mask
         )
 
-        z_text = self.projection(sentence_features)
+        z_text = self.projection.forward(sentence_features)
 
         return {
             "token_features": token_features,

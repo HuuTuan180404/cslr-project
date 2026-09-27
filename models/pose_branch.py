@@ -19,7 +19,7 @@ class PoseBranch(nn.Module):
     def __init__(self, config):
         super().__init__()
 
-        self.max_seq_len = config.dataset.max_length
+        self.max_frames = config.dataset.max_frames
         self.use_rgb = config.model.use_rgb
 
         self.use_face_pose = config.pose.face.enabled
@@ -39,7 +39,7 @@ class PoseBranch(nn.Module):
             rgb_embed_dim=config.rgb.embed_dim,
             act=str(config.model.act),
             rgb_num_heads=config.rgb.num_heads,
-            depth=config.model.depth,
+            depth=config.model.pose_branch.depth,
             dropout=config.model.dropout,
             pose_rgb_num_heads=config.model.pose_rgb_num_heads,
             pose_pose_num_heads=config.model.pose_pose_num_heads,
@@ -54,11 +54,11 @@ class PoseBranch(nn.Module):
                 input_dim=config.pose.face.num_joints * config.pose.face.channels,
                 embed_dim=config.pose.face.embed_dim,
                 num_heads=config.pose.face.num_heads,
-                depth=config.model.depth,
+                depth=config.model.pose_branch.depth,
                 mlp_ratio=config.model.mlp_ratio,
                 dropout=config.model.dropout,
                 act=str(config.model.act),
-                max_seq_len=config.dataset.max_length,
+                max_frames=config.dataset.max_frames,
                 pre_norm=self.pre_norm,
             )
             if config.pose.face.enabled
@@ -71,26 +71,18 @@ class PoseBranch(nn.Module):
                 input_dim=config.pose.body.num_joints * config.pose.body.channels,
                 embed_dim=config.pose.body.embed_dim,
                 num_heads=config.pose.body.num_heads,
-                depth=config.model.depth,
+                depth=config.model.pose_branch.depth,
                 mlp_ratio=config.model.mlp_ratio,
                 dropout=config.model.dropout,
                 act=str(config.model.act),
-                max_seq_len=config.dataset.max_length,
+                max_frames=config.dataset.max_frames,
                 pre_norm=self.pre_norm,
             )
             if config.pose.body.enabled
             else None
         )
 
-    def forward(
-        self,
-        lh_pose,
-        rh_pose,
-        lh_rgb: torch.Tensor | None,
-        rh_rgb: torch.Tensor | None,
-        face: torch.Tensor | None,
-        body: torch.Tensor | None,
-    ):
+    def forward(self, lh_pose, rh_pose, lh_rgb=None, rh_rgb=None, face=None, body=None):
         # (B, L, J, 2) -> (B, L, J*2)
         lh_pose = lh_pose.flatten(start_dim=-2)
         rh_pose = rh_pose.flatten(start_dim=-2)
