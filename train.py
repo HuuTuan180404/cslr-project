@@ -68,34 +68,33 @@ def build_dataset(config, phase: str):
 # ============================================================
 # DataLoader
 # ============================================================
+def build_dataloader(dataset, config, phase: str, collate_fn=None):
+    is_train = phase == "train"
 
-# def build_dataloader(dataset, config, split: str):
-#     dataloader_config = config["dataloader"]
-
-#     is_train = split == "train"
-
-#     return DataLoader(dataset, batch_size=dataloader_config["batch_size"], shuffle=dataloader_config["shuffle"] if is_train else False, num_workers=dataloader_config["num_workers"], pin_memory=dataloader_config["pin_memory"], drop_last=dataloader_config["drop_last"] if is_train else False, persistent_workers=(dataloader_config["persistent_workers"]
-#             and dataloader_config["num_workers"] > 0
-# ))
+    return DataLoader(
+        dataset,
+        batch_size=config.dataloader.batch_size,
+        shuffle=config.dataloader.shuffle if is_train else False,
+        num_workers=config.dataloader.num_workers,
+        pin_memory=config.dataloader.pin_memory,
+        persistent_workers=(
+            config.dataloader.persistent_workers and config.dataloader.num_workers > 0
+        ),
+        collate_fn=collate_fn,
+    )
 
 
 # ============================================================
 # Model
 # ============================================================
 
-# def build_model(config):
-#     model_config = config["model"]
 
-#     model_name = model_config["name"].lower()
-
-#     if model_name == "siformer":
-#         from models.siformer import Siformer
-
-#         model = Siformer(num_classes=model_config["num_classes"], num_hid=model_config["input_dim"])
-
-#         return model
-
-#     raise ValueError(f"Unknown model: {model_name}")
+def build_model(config) -> nn.Module:
+    model_name = config.model.name.lower()
+    if model_name == "mymodel":
+        model = CSLRModel(config=config)
+        return model
+    raise ValueError(f"Unknown model: {model_name}")
 
 
 # ============================================================
@@ -133,53 +132,59 @@ def build_dataset(config, phase: str):
 # ============================================================
 # Training
 # ============================================================
+def train_one_epoch(model, dataloader, criterion, optimizer, device):
+    model.train()
 
-# def train_one_epoch(model, dataloader, criterion, optimizer, device):
-#     model.train()
+    total_loss = 0.0
+    total_samples = 0
+    correct = 0
 
-#     total_loss = 0.0
-#     total_samples = 0
-#     correct = 0
+    for batch in dataloader:
+        # ----------------------------------------------------
+        # TODO:
+        # Điều chỉnh phần này theo output thực tế của Dataset
+        # ----------------------------------------------------
+        lh_pose = batch["left"].to(device)
+        rh_pose = batch["right"].to(device)
+        lh_rgb = batch["rgb_left"].to(device) if batch["rgb_left"] is not None else None
+        rh_rgb = (
+            batch["rgb_right"].to(device) if batch["rgb_right"] is not None else None
+        )
+        face = batch["face"].to(device) if batch["face"] is not None else None
+        body = batch["body"].to(device) if batch["body"] is not None else None
+        gloss_ids = batch["gloss_ids"].to(device)
+        text_attention_mask = batch["text_attention_mask"].to(device)
 
-#     for batch in dataloader:
+        # optimizer.zero_grad()
 
-#         # ----------------------------------------------------
-#         # TODO:
-#         # Điều chỉnh phần này theo output thực tế của Dataset
-#         # ----------------------------------------------------
+        outputs = model(
+            lh_pose, rh_pose, lh_rgb, rh_rgb, face, body, gloss_ids, text_attention_mask
+        )
 
-#         inputs = batch["pose"]
-#         labels = batch["label"]
+        break
 
-#         inputs = inputs.to(device)
-#         labels = labels.to(device)
+        # loss = criterion(outputs, labels)
 
-#         optimizer.zero_grad()
+        # loss.backward()
+        # optimizer.step()
 
-#         outputs = model(inputs)
+        # ----------------------------------------------------
+        # Statistics
+        # ----------------------------------------------------
 
-#         loss = criterion(outputs, labels)
+    #     batch_size = labels.size(0)
 
-#         loss.backward()
-#         optimizer.step()
+    #     total_loss += loss.item() * batch_size
+    #     total_samples += batch_size
 
-#         # ----------------------------------------------------
-#         # Statistics
-#         # ----------------------------------------------------
+    #     predictions = outputs.argmax(dim=1)
 
-#         batch_size = labels.size(0)
+    #     correct += (predictions == labels).sum().item()
 
-#         total_loss += loss.item() * batch_size
-#         total_samples += batch_size
+    # avg_loss = total_loss / total_samples
+    # accuracy = correct / total_samples
 
-#         predictions = outputs.argmax(dim=1)
-
-#         correct += (predictions == labels).sum().item()
-
-#     avg_loss = total_loss / total_samples
-#     accuracy = correct / total_samples
-
-#     return avg_loss, accuracy
+    # return avg_loss, accuracy
 
 
 # ============================================================
