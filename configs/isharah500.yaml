@@ -114,8 +114,8 @@ model:
   fusion:
     type: cross_attention
 
-  text_branch:
-    vocab_size: 390
+  t_branch: # text_branch
+    vocab_size: 388
     embed_dim: 256
     depth: 2
     num_heads: 8
@@ -125,9 +125,12 @@ model:
     expand: 2
     padding_idx: 0
 
-  pose_branch:
-    embed_dim: 768
-    depth: 4
+  p_branch: # pose_branch:
+    embed_dim: 256
+    d_state: 64 # mamba2
+    conv_kernel: 3
+    expand: 2
+    depth: 2
     num_heads: 8
     proj_dim: 128
 
@@ -159,25 +162,6 @@ scheduler:
 
   warmup_epochs: 5
 
-
-# ============================================================
-# Training
-# ============================================================
-
-# training:
-#   epochs: 50
-
-#   seed: 379
-
-#   device: "cuda"
-
-#   mixed_precision: true
-
-#   gradient_clip:
-#     enabled: false
-#     max_norm: 1.0
-
-#   gradient_accumulation_steps: 1
 
 
 # ============================================================
@@ -295,6 +279,8 @@ training:
 # ------------------------------------------------------------
 loss:
   type: ctc
+  lambda_contrastive: 0.6
+  lambda_ctc: 1.0
 
   ctc:
     blank: 0

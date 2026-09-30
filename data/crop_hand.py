@@ -1,6 +1,6 @@
 import cv2
 from pathlib import Path
-
+from tqdm import tqdm
 import mediapipe as mp
 import numpy as np
 
@@ -11,8 +11,8 @@ import numpy as np
 
 DATASET_NAME = Path("data/isharah500")
 
-INPUT_DIR = DATASET_NAME / "rgb"
-OUTPUT_DIR = DATASET_NAME / "rgb_cropped"
+INPUT_DIR = DATASET_NAME / "02"
+OUTPUT_DIR = DATASET_NAME / "02_cropped"
 
 IMAGE_SIZE = (112, 112)
 
@@ -150,7 +150,8 @@ def process_frames():
         min_detection_confidence=MIN_DETECTION_CONFIDENCE,
         min_tracking_confidence=MIN_TRACKING_CONFIDENCE,
     ) as hands:
-        for sample_idx, sample_id in enumerate(sample_ids):
+        for sample_idx, sample_id in enumerate(tqdm(sample_ids)):
+            # for sample_idx, sample_id in enumerate(sample_ids):
             input_dir = INPUT_DIR / sample_id
             output_dir = OUTPUT_DIR / sample_id
 
@@ -172,12 +173,6 @@ def process_frames():
             if not frame_paths:
                 print(f"No frames found: {input_dir}")
                 continue
-
-            print(
-                f"\n[{sample_idx + 1}/{len(sample_ids)}] "
-                f"Processing {sample_id} "
-                f"({len(frame_paths)} frames)"
-            )
 
             # ------------------------------------------------
             # Reset for every sample
@@ -242,12 +237,7 @@ def process_frames():
                         # Padding
                         # --------------------------------------------
 
-                        crop_box = add_padding(
-                            bbox,
-                            image_width,
-                            image_height,
-                            PADDING,
-                        )
+                        crop_box = add_padding(bbox, image_width, image_height, PADDING)
 
                         # --------------------------------------------
                         # Crop
@@ -296,8 +286,6 @@ def process_frames():
 
                             save_image(crop, save_path)
 
-                        print(f"{frame_path.stem}: {hand_label} → previous bbox")
-
                     # ------------------------------------------------
                     # No previous bbox
                     # ------------------------------------------------
@@ -311,10 +299,6 @@ def process_frames():
                             save_path = right_dir / f"{frame_path.stem}.jpg"
 
                         cv2.imwrite(str(save_path), placeholder)
-
-                        print(f"{frame_path.stem}: {hand_label} → placeholder")
-
-                print(f"[{frame_idx + 1}/{len(frame_paths)}] {frame_path.stem}")
 
             if len(frame_paths) != len(list(left_dir.iterdir())):
                 print(

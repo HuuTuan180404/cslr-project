@@ -19,9 +19,9 @@ def pad_or_truncate_frames(x: torch.Tensor, max_frames, padding_value=0.0):
 
     # T > max_frames: truncate
     if T > max_frames:
-        raise ValueError(
-            f"Number of frames ({T}) exceeds the maximum allowed ({max_frames})."
-        )
+        # raise ValueError(
+        #     f"Number of frames ({T}) exceeds the maximum allowed ({max_frames})."
+        # )
         indices = torch.linspace(
             0,
             T - 1,
@@ -77,7 +77,7 @@ def encode_gloss(gloss, vocab):
     Gloss tokens -> token IDs.
     """
 
-    unk_idx = vocab["<unk>"]
+    unk_idx = vocab["<UNK>"]
 
     token_ids = [vocab.get(token, unk_idx) for token in gloss]
 
@@ -112,7 +112,7 @@ def cslr_collate_fn(batch, vocab, max_frames=256):
     # Frame lengths
     # ========================================================
 
-    frame_lengths = torch.tensor(
+    input_lengths = torch.tensor(
         [min(sample["length"], max_frames) for sample in batch], dtype=torch.long
     )
 
@@ -121,7 +121,7 @@ def cslr_collate_fn(batch, vocab, max_frames=256):
     # ========================================================
 
     frame_attention_mask = create_frame_attention_mask(
-        lengths=frame_lengths, max_frames=max_frames
+        lengths=input_lengths, max_frames=max_frames
     )
 
     # ========================================================
@@ -196,13 +196,14 @@ def cslr_collate_fn(batch, vocab, max_frames=256):
     # Gloss lengths
     # ========================================================
 
-    gloss_lengths = torch.tensor([len(x) for x in gloss_ids], dtype=torch.long)
+    target_lengths = torch.tensor([len(x) for x in gloss_ids], dtype=torch.long)
+    target_ids = gloss_ids.copy()
 
     # ========================================================
     # Padding gloss
     # ========================================================
 
-    pad_idx = vocab["<pad>"]
+    pad_idx = vocab["<PAD>"]
 
     gloss_ids = pad_sequence(gloss_ids, batch_first=True, padding_value=pad_idx)
 
@@ -231,10 +232,11 @@ def cslr_collate_fn(batch, vocab, max_frames=256):
         "rgb_left": rgb_batch["rgb_left"],
         "rgb_right": rgb_batch["rgb_right"],
         # Visual
-        "frame_lengths": frame_lengths,
+        "input_lengths": input_lengths,
         "frame_attention_mask": frame_attention_mask,
         # Text
         "gloss_ids": gloss_ids,
-        "gloss_lengths": gloss_lengths,
+        "target_lengths": target_lengths,
         "text_attention_mask": text_attention_mask,
+        "target_ids": target_ids,
     }

@@ -92,15 +92,16 @@ class BaseSignLanguageDataset(Dataset, ABC):
         # Metadata sẽ được load bởi class con
         self.metadata = self._load_metadata()
 
-        if self.phase == "train":
+        self.vocab = vocab
+        if vocab is None and self.phase != "test":
             self.vocab = self._build_vocab()
-            self.vocab["<unk>"] = len(self.vocab) + 1  # Unknown token
-            self.vocab["<pad>"] = 0  # Padding token
-        else:
-            if self.phase in {"dev", "test"} and vocab is None:
-                raise ValueError("Vocab must be provided for dev/test phase.")
-            else:
-                self.vocab = vocab
+            self.vocab["<PAD>"] = 0  # Padding token
+            self.vocab["<UNK>"] = len(self.vocab) + 1  # Unknown token
+            self.vocab["<BLANK>"] = len(self.vocab) + 2  # Unknown token
+
+        self.blank_id = 0
+        self.blank_id = self.vocab["<BLANK>"]
+        self.unk_id = self.vocab["<UNK>"]
 
     def _validate(self):
         """Kiểm tra cấu hình Dataset."""

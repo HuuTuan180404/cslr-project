@@ -1,82 +1,60 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from .pose_branch import PoseBranch
 from .text_branch import TextBranch
 
 from utils.utils import get_config
 from models.utils import get_activation
+from models.mlp import MLP
 
 
 class DualBranchCSLRModel(nn.Module):
-    """
-    Sketch model cho bài toán Continuous Sign Language Recognition (CSLR).
-
-    Architecture:
-        - Image/Pose branch: PoseBranch (pose + rgb)
-        - Text branch: TextBranch (Mamba + projection)
-        - Fusion head: concat image/text embeddings -> classifier
-
-    Đây là bản phác thảo để bạn sửa tiếp theo, không cần phải tối ưu ngay.
-    """
-
-    def __init__(self, config):
+    def __init__(self, cfg):
         super().__init__()
 
-        self.config = config
-        dropout = config.model.dropout
-        act = config.model.act
+        self.config = cfg
+        dropout = cfg.model.dropout
+        act = cfg.model.act
 
         # ------------------------------------------------------------
         # 1. Image branch
         # ------------------------------------------------------------
-        self.image_encoder = PoseBranch(config)
-
-        # Tính chiều đầu ra của image encoder theo cấu hình hiện có
-        # - left hand: pose left embed dim
-        # - right hand: pose right embed dim
-        # - body/face nếu enable
-        left_dim = config.pose.left_hand.embed_dim
-        right_dim = config.pose.right_hand.embed_dim
-
-        face_dim = 0
-        if config.pose.face.enabled:
-            face_dim = config.pose.face.embed_dim
-
-        body_dim = 0
-        if config.pose.body.enabled:
-            body_dim = config.pose.body.embed_dim
-
-        self.pose_dim = left_dim + right_dim + face_dim + body_dim
+        self.image_encoder = PoseBranch(cfg)
+        self.full_pose_dim = self.image_encoder.full_pose_dim
 
         # ------------------------------------------------------------
         # 2. Text branch
         # ------------------------------------------------------------
-        self.vocab_size = config.model.text_branch.vocab_size
-        self.text_projection_dim = config.model.text_branch.proj_dim
+        self.vocab_size = cfg.model.t_branch.vocab_size
+        self.text_projection_dim = cfg.model.t_branch.proj_dim
 
-        self.text_encoder = TextBranch(config)
+        self.text_encoder = TextBranch(cfg)
 
         # ------------------------------------------------------------
         # 3. Projection head cho visual branch
         # ------------------------------------------------------------
-        project_dim = config.model.pose_branch.proj_dim
-        self.image_proj = nn.Sequential(
-            nn.Linear(self.pose_dim, project_dim),
-            get_activation(act),
-            nn.Dropout(dropout),
-            nn.Linear(project_dim, project_dim),
+        self.image_proj = MLP(
+            in_dim=cfg.model.p_branch.embed_dim,
+            mlp_ratio=2,
+            act=act,
+            dropout=dropout,
+            out_dim=cfg.model.p_branch.proj_dim,
         )
 
         # ------------------------------------------------------------
         # 4. Classifier / fusion head (phác thảo)
         # ------------------------------------------------------------
-        self.classifier = nn.Sequential(
-            nn.Linear(self.text_projection_dim + project_dim, 256),
-            get_activation(act),
-            nn.Dropout(dropout),
-            nn.Linear(256, self.vocab_size),
+        self.ctc_logits = MLP(
+            in_dim=cfg.model.p_branch.embed_dim,
+            mlp_ratio=2,
+            act=act,
+            dropout=dropout,
+            out_dim=self.vocab_size + 3,
         )
+
+        self.contrastive_logit_scale = nn.Parameter(torch.log(torch.tensor(1 / 0.07)))
 
     def forward(
         self,
@@ -94,45 +72,32 @@ class DualBranchCSLRModel(nn.Module):
         # ------------------------------------------------------------
         image_features = self.image_encoder.forward(
             lh_pose, rh_pose, lh_rgb, rh_rgb, face, body
-        )
-        # image_features: [B, T, D_img]
+        )  # (B, T, embed_dim)
+        ctc_logits = self.ctc_logits(image_features)
 
         # Pool temporal dimension để lấy biểu diễn toàn video
         image_context = image_features.mean(dim=1)  # [B, D_img]
         z_img = self.image_proj(image_context)  # [B, proj_dim]
+        z_img = F.normalize(z_img, dim=-1)
 
         # ------------------------------------------------------------
         # 2. Text features
         # ------------------------------------------------------------
+        z_text = None
         if gloss_ids is not None and text_attention_mask is not None:
             text_dict = self.text_encoder.forward(
                 input_ids=gloss_ids, attention_mask=text_attention_mask
             )
             z_text = text_dict["z_text"]  # [B, proj_text]
-            token_features = text_dict["token_features"]
-            sentence_features = text_dict["sentence_features"]
-        else:
-            z_text = None
-            token_features = None
-            sentence_features = None
 
-        # ------------------------------------------------------------
-        # 3. Fusion
-        # ------------------------------------------------------------
+        contrastive_logits = None
         if z_text is not None:
-            fused = torch.cat([z_img, z_text], dim=-1)  # [B, D_img + D_text]
-            logits = self.classifier(fused)
-        else:
-            logits = None
+            similarity = z_img @ z_text.T
+            contrastive_logits = similarity * self.contrastive_logit_scale.exp()
 
         return {
-            "image_features": image_features,
-            "image_context": image_context,
-            "z_img": z_img,
-            "token_features": token_features,
-            "sentence_features": sentence_features,
-            "z_text": z_text,
-            "logits": logits,
+            "contrastive_logits": contrastive_logits,
+            "ctc_logits": ctc_logits,
         }
 
 

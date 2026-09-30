@@ -14,11 +14,9 @@ import torch.nn as nn
 from models.model import CSLRModel
 
 from utils.utils import get_config
+from losses.total_loss import TotalLoss
 
 
-# ============================================================
-# Utils
-# ============================================================
 def load_config(config_path: str) -> DictConfig:
     """Load YAML config and resolve variable interpolation."""
 
@@ -54,9 +52,6 @@ def get_device(config):
     return torch.device(device)
 
 
-# ============================================================
-# Dataset
-# ============================================================
 def build_dataset(config, phase: str):
     dataset_name = config.dataset.benchmark.lower()
 
@@ -66,9 +61,6 @@ def build_dataset(config, phase: str):
     return ISharah500Dataset(config=config, phase=phase)
 
 
-# ============================================================
-# DataLoader
-# ============================================================
 def build_dataloader(dataset, config, phase: str, collate_fn=None):
     is_train = phase == "train"
 
@@ -85,22 +77,12 @@ def build_dataloader(dataset, config, phase: str, collate_fn=None):
     )
 
 
-# ============================================================
-# Model
-# ============================================================
-
-
-def build_model(config) -> nn.Module:
-    model_name = config.model.name.lower()
+def build_model(cfg) -> nn.Module:
+    model_name = cfg.model.name.lower()
     if model_name == "mymodel":
-        model = CSLRModel(config=config)
+        model = CSLRModel(cfg=cfg)
         return model
     raise ValueError(f"Unknown model: {model_name}")
-
-
-# ============================================================
-# Loss
-# ============================================================
 
 
 def build_loss(config):
@@ -112,11 +94,8 @@ def build_loss(config):
     raise ValueError(f"Unknown loss: {config.loss.name}")
 
 
-# ============================================================
-# Optimizer
-# ============================================================
-def build_optimizer(model, config):
-    optimizer_config = config.optimizer
+def build_optimizer(model, cfg):
+    optimizer_config = cfg.optimizer
 
     name = optimizer_config.name.lower()
 
@@ -132,249 +111,330 @@ def build_optimizer(model, config):
     raise ValueError(f"Unknown optimizer: {optimizer_config.name}")
 
 
-# ============================================================
-# Training
-# ============================================================
-def train_one_epoch(model, dataloader, criterion, optimizer, device):
+def edit_distance(pred, target):
+    n = len(target)
+    m = len(pred)
+
+    dp = [[0] * (m + 1) for _ in range(n + 1)]
+
+    for i in range(n + 1):
+        dp[i][0] = i
+
+    for j in range(m + 1):
+        dp[0][j] = j
+
+    for i in range(1, n + 1):
+        for j in range(1, m + 1):
+            if target[i - 1] == pred[j - 1]:
+                dp[i][j] = dp[i - 1][j - 1]
+            else:
+                dp[i][j] = (
+                    min(
+                        dp[i - 1][j],  # deletion
+                        dp[i][j - 1],  # insertion
+                        dp[i - 1][j - 1],  # substitution
+                    )
+                    + 1
+                )
+
+    return dp[n][m]
+
+
+def train_one_epoch(model, dataloader, criterion, optimizer, device, blank_id):
     model.train()
 
-    total_loss = 0.0
+    total_loss = 0
     total_samples = 0
-    correct = 0
+
+    total_errors = 0
+    total_words = 0
 
     for batch in dataloader:
         # ----------------------------------------------------
-        # TODO:
-        # Điều chỉnh phần này theo output thực tế của Dataset
+        # Input
         # ----------------------------------------------------
         lh_pose = batch["left"].to(device)
         rh_pose = batch["right"].to(device)
+
         lh_rgb = batch["rgb_left"].to(device) if batch["rgb_left"] is not None else None
+
         rh_rgb = (
             batch["rgb_right"].to(device) if batch["rgb_right"] is not None else None
         )
+
         face = batch["face"].to(device) if batch["face"] is not None else None
+
         body = batch["body"].to(device) if batch["body"] is not None else None
+
         gloss_ids = batch["gloss_ids"].to(device)
         text_attention_mask = batch["text_attention_mask"].to(device)
 
-        # optimizer.zero_grad()
+        # ----------------------------------------------------
+        # Forward
+        # ----------------------------------------------------
+        outputs = model(
+            lh_pose, rh_pose, lh_rgb, rh_rgb, face, body, gloss_ids, text_attention_mask
+        )
+
+        # return 0, 0
+
+        # ----------------------------------------------------
+        # CTC targets
+        # ----------------------------------------------------
+        target_ids = torch.cat(batch["target_ids"]).to(device)
+
+        input_lengths = batch["input_lengths"].to(device)
+        target_lengths = batch["target_lengths"].to(device)
+
+        # ----------------------------------------------------
+        # Loss
+        # ----------------------------------------------------
+        loss_dict = criterion(outputs, target_ids, input_lengths, target_lengths)
+
+        loss = loss_dict["loss"]
+
+        # ----------------------------------------------------
+        # Backpropagation
+        # ----------------------------------------------------
+        optimizer.zero_grad()
+
+        loss.backward()
+
+        optimizer.step()
+
+        # ----------------------------------------------------
+        # Loss statistics
+        # ----------------------------------------------------
+        batch_size = lh_pose.size(0)
+
+        total_loss += loss.item() * batch_size
+        total_samples += batch_size
+
+        # ====================================================
+        # CTC prediction
+        # ====================================================
+
+        # [B, T, C]
+        ctc_logits = outputs["ctc_logits"]
+
+        # [B, T]
+        predictions = ctc_logits.argmax(dim=-1)
+
+        for i in range(batch_size):
+            # ------------------------------------------------
+            # Prediction
+            # ------------------------------------------------
+
+            pred = predictions[i]
+
+            # Remove padding timesteps
+            pred = pred[: input_lengths[i]]
+
+            # CTC collapse:
+            # [A, A, B, B, B, C] -> [A, B, C]
+            pred = torch.unique_consecutive(pred)
+
+            # Remove CTC blank
+            pred = pred[pred != blank_id]
+
+            pred = pred.cpu().tolist()
+
+            # ------------------------------------------------
+            # Ground truth
+            # ------------------------------------------------
+
+            start = target_lengths[:i].sum().item()
+
+            end = start + target_lengths[i].item()
+
+            target = target_ids[start:end].cpu().tolist()
+
+            # ------------------------------------------------
+            # Edit distance
+            # ------------------------------------------------
+
+            errors = edit_distance(pred, target)
+
+            total_errors += errors
+            total_words += len(target)
+
+    # --------------------------------------------------------
+    # Epoch statistics
+    # --------------------------------------------------------
+
+    avg_loss = total_loss / total_samples
+
+    wer = total_errors / total_words if total_words > 0 else 0.0
+
+    return avg_loss, wer
+
+
+@torch.no_grad()
+def validate(model, dataloader, criterion, device, blank_id):
+    model.eval()
+
+    total_loss = 0.0
+    total_samples = 0
+
+    total_errors = 0
+    total_words = 0
+
+    for batch in dataloader:
+        lh_pose = batch["left"].to(device)
+        rh_pose = batch["right"].to(device)
+
+        lh_rgb = batch["rgb_left"].to(device) if batch["rgb_left"] is not None else None
+
+        rh_rgb = (
+            batch["rgb_right"].to(device) if batch["rgb_right"] is not None else None
+        )
+
+        face = batch["face"].to(device) if batch["face"] is not None else None
+
+        body = batch["body"].to(device) if batch["body"] is not None else None
+
+        gloss_ids = batch["gloss_ids"].to(device)
+        text_attention_mask = batch["text_attention_mask"].to(device)
 
         outputs = model(
             lh_pose, rh_pose, lh_rgb, rh_rgb, face, body, gloss_ids, text_attention_mask
         )
 
-        break
+        target_ids = torch.cat(batch["target_ids"]).to(device)
+        input_lengths = batch["input_lengths"].to(device)
+        target_lengths = batch["target_lengths"].to(device)
 
-        # loss = criterion(outputs, labels)
+        loss_dict = criterion(outputs, target_ids, input_lengths, target_lengths)
 
-        # loss.backward()
-        # optimizer.step()
+        loss = loss_dict["loss"]
 
-        # ----------------------------------------------------
-        # Statistics
-        # ----------------------------------------------------
-
-    #     batch_size = labels.size(0)
-
-    #     total_loss += loss.item() * batch_size
-    #     total_samples += batch_size
-
-    #     predictions = outputs.argmax(dim=1)
-
-    #     correct += (predictions == labels).sum().item()
-
-    # avg_loss = total_loss / total_samples
-    # accuracy = correct / total_samples
-
-    # return avg_loss, accuracy
-
-
-# ============================================================
-# Validation
-# ============================================================
-@torch.no_grad()
-def validate(model, dataloader, criterion, device):
-    model.eval()
-
-    total_loss = 0.0
-    total_samples = 0
-    correct = 0
-
-    for batch in dataloader:
-        inputs = batch["pose"]
-        labels = batch["label"]
-
-        inputs = inputs.to(device)
-        labels = labels.to(device)
-
-        outputs = model(inputs)
-
-        loss = criterion(outputs, labels)
-
-        batch_size = labels.size(0)
+        batch_size = lh_pose.size(0)
 
         total_loss += loss.item() * batch_size
         total_samples += batch_size
 
-        predictions = outputs.argmax(dim=1)
+        ctc_logits = outputs["ctc_logits"]
 
-        correct += (predictions == labels).sum().item()
+        # [B, T, C]
+        predictions = ctc_logits.argmax(dim=-1)
 
-    avg_loss = total_loss / total_samples
-    accuracy = correct / total_samples
+        for i in range(batch_size):
+            pred = predictions[i]
 
-    return avg_loss, accuracy
+            # Only use valid timesteps
+            pred = pred[: input_lengths[i]]
 
+            pred = torch.unique_consecutive(pred)
 
-# ============================================================
-# Main
-# ============================================================
+            # Remove blank
+            pred = pred[pred != blank_id]
+
+            pred = pred.cpu().tolist()
+
+            # ---------------------------------
+            # Ground truth
+            # ---------------------------------
+            start = target_lengths[:i].sum().item()
+            end = start + target_lengths[i].item()
+
+            target = target_ids[start:end].cpu().tolist()
+
+            # ---------------------------------
+            # Edit distance
+            # ---------------------------------
+            errors = edit_distance(pred, target)
+
+            total_errors += errors
+            total_words += len(target)
+
+    avg_loss = total_loss / total_samples if total_samples > 0 else 0.0
+
+    wer = total_errors / total_words if total_words > 0 else 0.0
+
+    return avg_loss, wer
 
 
 def main(config_path: str):
-
-    # --------------------------------------------------------
-    # Config
-    # --------------------------------------------------------
-    config = load_config(config_path)
-    max_frames = config.dataset.max_frames
-    seed = config.project.seed
+    cfg = load_config(config_path)
+    max_frames = cfg.dataset.max_frames
+    seed = cfg.project.seed
 
     set_seed(seed)
 
-    device = get_device(config)
+    device = get_device(cfg)
 
-    # --------------------------------------------------------
-    # Dataset
-    # --------------------------------------------------------
-    train_dataset = build_dataset(config, phase="train")
-    # dev_dataset = build_dataset(config, phase="dev")
-    # test_dataset = build_dataset(config, phase="test")
+    train_dataset = build_dataset(cfg, phase="train")
+    dev_dataset = build_dataset(cfg, phase="dev")
+    # test_dataset = build_dataset(cfg, phase="test")
 
-    # --------------------------------------------------------
-    # DataLoader
-    # --------------------------------------------------------
     train_loader = build_dataloader(
         train_dataset,
-        config,
+        cfg,
         "train",
         lambda batch: cslr_collate_fn(
             batch, vocab=train_dataset.vocab, max_frames=max_frames
         ),
     )
-    # dev_loader = build_dataloader(
-    #     dev_dataset,
-    #     config,
-    #     "dev",
-    #     lambda batch: cslr_collate_fn(
-    #         batch, vocab=train_dataset.vocab, max_frames=max_frames
-    #     ),
-    # )
+    dev_loader = build_dataloader(
+        dev_dataset,
+        cfg,
+        "dev",
+        lambda batch: cslr_collate_fn(
+            batch, vocab=train_dataset.vocab, max_frames=max_frames
+        ),
+    )
 
-    # batch = next(iter(train_loader))
-
-    # print(f"Train dataset size: {len(train_dataset)}")
-    # print(f"Train batches: {len(train_loader)}")
-
-    # lh_pose = sample["left"].unsqueeze(0)
-    # rh_pose = sample["right"].unsqueeze(0)
-
-    # lh_rgb = sample["rgb_left"].unsqueeze(0)
-    # rh_rgb = sample["rgb_right"].unsqueeze(0)
-
-    # face = sample["face"].unsqueeze(0)
-    # body = sample["body"].unsqueeze(0)
-
-    model = build_model(config=config)
+    model = build_model(cfg=cfg)
     model = model.to(device)
 
-    train_one_epoch(model, train_loader, None, None, device)
+    criterion = TotalLoss(cfg)
 
-    # print("=" * 10, output.shape)  # <class 'dict'>
+    optimizer = build_optimizer(model, cfg)
 
-    # print("="*10, type(sample)) # <class 'dict'>
-    # print("="*10, sample.keys()) # dict_keys(['id', 'gloss', 'text', 'use_rgb', 'right', 'left', 'face', 'body', 'rgb_left', 'rgb_right'])
+    num_epochs = cfg.training.epochs
 
-    # print("="*10, sample["left"].shape) # (T, H, W, 3)
-    # print("="*10, sample["rgb_left"].shape) # (T, H, W, 3)
+    for epoch in range(1, num_epochs + 1):
+        train_loss, train_wer = train_one_epoch(
+            model, train_loader, criterion, optimizer, device, train_dataset.blank_id
+        )
 
-    # print("="*10, xxxxxx) # xxxxx
-    # print("="*10, xxxxxx) # xxxxx
-    # print("="*10, xxxxxx) # xxxxx
-    # print("="*10, xxxxxx) # xxxxx
+        dev_loss, dev_wer = validate(
+            model, dev_loader, criterion, device, train_dataset.blank_id
+        )
+        print(
+            f"Epoch [{epoch:03d}/{num_epochs:03d}] "
+            f"| Train Loss: {train_loss:.4f} "
+            f"| Train WER: {train_wer * 100:.2f}% "
+            f"| Val Loss: {dev_loss:.4f} "
+            f"| Val WER: {dev_wer * 100:.2f}%"
+        )
 
-    # --------------------------------------------------------
-    # DataLoader
-    # --------------------------------------------------------
+        # ----------------------------------------------------
+        # Save best model
+        # ----------------------------------------------------
+        # if dev_acc > best_accuracy:
+        #     best_accuracy = dev_acc
 
-    # train_loader = build_dataloader(train_dataset, config, split="train")
+        #     save_dir = Path(cfg.checkpoint.save_dir)
 
-    # val_loader = build_dataloader(val_dataset, config, split="val")
+        #     save_dir.mkdir(parents=True, exist_ok=True)
 
-    # print(f"Train batches: {len(train_loader)}")
-    # print(f"Val batches  : {len(val_loader)}")
+        #     save_path = save_dir / cfg.checkpoint.filename
 
-    # --------------------------------------------------------
-    # Model
-    # --------------------------------------------------------
+        #     torch.save(
+        #         {
+        #             "epoch": epoch,
+        #             "model_state_dict": model.state_dict(),
+        #             "optimizer_state_dict": optimizer.state_dict(),
+        #             "val_accuracy": dev_acc,
+        #             "config": cfg,
+        #         },
+        #         save_path,
+        #     )
 
-    # model = build_model(config)
+        #     print(f"  → Best model saved: {save_path}")
 
-    # model = model.to(device)
-
-    # --------------------------------------------------------
-    # Loss
-    # --------------------------------------------------------
-
-    # criterion = build_loss(config)
-
-    # --------------------------------------------------------
-    # Optimizer
-    # --------------------------------------------------------
-
-    # optimizer = build_optimizer(model, config)
-
-    # --------------------------------------------------------
-    # Training
-    # --------------------------------------------------------
-
-    # num_epochs = config["training"]["epochs"]
-
-    # best_accuracy = 0.0
-
-    # for epoch in range(1, num_epochs + 1):
-
-    #     train_loss, train_acc = train_one_epoch(model=model, dataloader=train_loader, criterion=criterion, optimizer=optimizer, device=device)
-
-    #     val_loss, val_acc = validate(model=model, dataloader=val_loader, criterion=criterion, device=device)
-
-    #     print(
-    #         f"Epoch [{epoch:03d}/{num_epochs:03d}] "
-    #         f"| Train Loss: {train_loss:.4f} "
-    #         f"| Train Acc: {train_acc * 100:.2f}% "
-    #         f"| Val Loss: {val_loss:.4f} "
-    #         f"| Val Acc: {val_acc * 100:.2f}%"
-    #         )
-
-    #     # ----------------------------------------------------
-    #     # Save best model
-    #     # ----------------------------------------------------
-
-    #     if val_acc > best_accuracy:
-
-    #         best_accuracy = val_acc
-
-    #         save_dir = Path(config["checkpoint"]["save_dir"])
-
-    #         save_dir.mkdir(parents=True, exist_ok=True)
-
-    #         save_path = save_dir / config["checkpoint"]["filename"]
-
-    #         torch.save({
-    #                 "epoch": epoch, "model_state_dict": model.state_dict(), "optimizer_state_dict": optimizer.state_dict(), "val_accuracy": val_acc, "config": config, }, save_path)
-
-    #         print(f"  → Best model saved: {save_path}")
+        # break
 
 
 # def test_model(config_path: str):

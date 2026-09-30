@@ -11,7 +11,7 @@ class TransformerEncoderLayer(nn.Module):
 
         self.attn = nn.MultiheadAttention(embed_dim=d_model, num_heads=num_heads)
         self.norm1 = nn.LayerNorm(d_model)
-        self.mlp = MLP(d_model=d_model, mlp_ratio=mlp_ratio, act=act, dropout=dropout)
+        self.mlp = MLP(in_dim=d_model, mlp_ratio=mlp_ratio, act=act, dropout=dropout)
         self.norm2 = nn.LayerNorm(d_model)
         self.dropout = nn.Dropout(dropout)
 

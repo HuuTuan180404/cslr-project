@@ -99,10 +99,10 @@ class HandEncoderLayer(nn.Module):
         # 3. Feed Forward Network
         # ============================================================
         self.lh_mlp = MLP(
-            d_model=pose_embed_dim, mlp_ratio=mlp_ratio, act=act, dropout=dropout
+            in_dim=pose_embed_dim, mlp_ratio=mlp_ratio, act=act, dropout=dropout
         )
         self.rh_mlp = MLP(
-            d_model=pose_embed_dim, mlp_ratio=mlp_ratio, act=act, dropout=dropout
+            in_dim=pose_embed_dim, mlp_ratio=mlp_ratio, act=act, dropout=dropout
         )
 
         # Norm 3

@@ -3,6 +3,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 from mamba_ssm.modules.mamba_simple import Mamba
 
+from models.utils import get_activation
+from models.mlp import MLP
+
 """
 gloss_ids [B, L]
       │
@@ -59,7 +62,7 @@ class MambaTextEncoder(nn.Module):
         # 1. Token Embedding
         # --------------------------------------------------
         self.embedding = nn.Embedding(
-            num_embeddings=vocab_size,
+            num_embeddings=vocab_size + 2,
             embedding_dim=embed_dim,
             padding_idx=padding_idx,
         )
@@ -95,11 +98,8 @@ class MambaTextEncoder(nn.Module):
 
     def masked_mean_pooling(self, x, attention_mask) -> torch.Tensor:
         """
-        x:
-            [B, L, D]
-
-        attention_mask:
-            [B, L]
+        x: [B, L, D]
+        attention_mask: [B, L]
             1 = valid token
             0 = padding
         """
@@ -120,18 +120,11 @@ class MambaTextEncoder(nn.Module):
     def forward(self, input_ids, attention_mask):
         """
         Args:
-            input_ids:
-                [B, L]
-
-            attention_mask:
-                [B, L]
-
+            input_ids: [B, L]
+            attention_mask: [B, L]
         Returns:
-            token_features:
-                [B, L, D]
-
-            sentence_features:
-                [B, D]
+            token_features: [B, L, D]
+            sentence_features: [B, D]
         """
 
         # --------------------------------------------------
@@ -180,50 +173,26 @@ class MambaTextEncoder(nn.Module):
         return x, sentence_features
 
 
-class ProjectionHead(nn.Module):
-    def __init__(self, in_dim, hidden_dim, out_dim, dropout):
-        super().__init__()
-
-        self.projection = nn.Sequential(
-            nn.Linear(in_dim, hidden_dim),
-            nn.GELU(),
-            nn.Dropout(dropout),
-            nn.Linear(hidden_dim, out_dim),
-        )
-
-    def forward(self, x):
-        """
-        x: [B, D]
-        """
-
-        x = self.projection(x)
-        # [B, E]
-
-        x = F.normalize(x, dim=-1)
-
-        return x
-
-
 class TextBranch(nn.Module):
     def __init__(self, config):
         super().__init__()
-
         self.encoder = MambaTextEncoder(
-            vocab_size=config.model.text_branch.vocab_size,
-            embed_dim=config.model.text_branch.embed_dim,
-            depth=config.model.text_branch.depth,
-            padding_idx=config.model.text_branch.padding_idx,
-            state_dim=config.model.text_branch.state_dim,
-            conv_kernel=config.model.text_branch.conv_kernel,
-            expand=config.model.text_branch.expand,
+            vocab_size=config.model.t_branch.vocab_size,
+            embed_dim=config.model.t_branch.embed_dim,
+            depth=config.model.t_branch.depth,
+            padding_idx=config.model.t_branch.padding_idx,
+            state_dim=config.model.t_branch.state_dim,
+            conv_kernel=config.model.t_branch.conv_kernel,
+            expand=config.model.t_branch.expand,
             dropout=config.model.dropout,
         )
 
-        self.projection = ProjectionHead(
-            in_dim=config.model.text_branch.embed_dim,
-            hidden_dim=config.model.text_branch.embed_dim,
-            out_dim=config.model.text_branch.proj_dim,
+        self.projection = MLP(
+            in_dim=config.model.t_branch.embed_dim,
+            mlp_ratio=2,
+            act=config.model.act,
             dropout=config.model.dropout,
+            out_dim=config.model.t_branch.proj_dim,
         )
 
     def forward(self, input_ids, attention_mask):
@@ -232,7 +201,8 @@ class TextBranch(nn.Module):
             input_ids=input_ids, attention_mask=attention_mask
         )
 
-        z_text = self.projection.forward(sentence_features)
+        z_text = self.projection(sentence_features)  # [B, D]
+        z_text = F.normalize(z_text, dim=-1)
 
         return {
             "token_features": token_features,
