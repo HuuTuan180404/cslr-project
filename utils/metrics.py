@@ -174,6 +174,6 @@ def compute_wer(predictions: list[list[int]], targets: list[list[int]]) -> float
         total_words += len(target)
 
     if total_words == 0:
-        return 0.0
+        return 0, 0
 
-    return total_errors / total_words
+    return total_errors, total_words
