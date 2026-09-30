@@ -28,6 +28,8 @@ class DualBranchCSLRModel(nn.Module):
         # 2. Text branch
         # ------------------------------------------------------------
         self.vocab_size = cfg.model.t_branch.vocab_size
+        # CTC classes: PAD (0), glosses (1..vocab_size), UNK, then BLANK.
+        self.ctc_num_classes = self.vocab_size + 3
         self.text_projection_dim = cfg.model.t_branch.proj_dim
 
         self.text_encoder = TextBranch(cfg)
@@ -51,7 +53,7 @@ class DualBranchCSLRModel(nn.Module):
             mlp_ratio=2,
             act=act,
             dropout=dropout,
-            out_dim=self.vocab_size + 3,
+            out_dim=self.ctc_num_classes,
         )
 
         self.contrastive_logit_scale = nn.Parameter(torch.log(torch.tensor(1 / 0.07)))
