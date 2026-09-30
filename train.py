@@ -13,8 +13,11 @@ import torch.nn as nn
 
 from models.model import CSLRModel
 
-from utils.utils import get_config
 from losses.total_loss import TotalLoss
+
+from utils.checkpoint import save_checkpoint
+from utils.logger import get_logger
+from utils.metrics import ctc_greedy_decode, decode_targets, compute_wer
 
 
 def load_config(config_path: str) -> DictConfig:
@@ -111,48 +114,33 @@ def build_optimizer(model, cfg):
     raise ValueError(f"Unknown optimizer: {optimizer_config.name}")
 
 
-def edit_distance(pred, target):
-    n = len(target)
-    m = len(pred)
+def build_scheduler(optimizer, cfg):
+    scheduler_name = cfg.scheduler.name.lower()
 
-    dp = [[0] * (m + 1) for _ in range(n + 1)]
+    if scheduler_name == "cosine":
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer, T_max=cfg.training.epochs, eta_min=cfg.scheduler.eta_min
+        )
+    else:
+        raise ValueError(f"Unknown scheduler: {scheduler_name}")
 
-    for i in range(n + 1):
-        dp[i][0] = i
-
-    for j in range(m + 1):
-        dp[0][j] = j
-
-    for i in range(1, n + 1):
-        for j in range(1, m + 1):
-            if target[i - 1] == pred[j - 1]:
-                dp[i][j] = dp[i - 1][j - 1]
-            else:
-                dp[i][j] = (
-                    min(
-                        dp[i - 1][j],  # deletion
-                        dp[i][j - 1],  # insertion
-                        dp[i - 1][j - 1],  # substitution
-                    )
-                    + 1
-                )
-
-    return dp[n][m]
+    return scheduler
 
 
 def train_one_epoch(model, dataloader, criterion, optimizer, device, blank_id):
     model.train()
 
-    total_loss = 0
+    total_loss = 0.0
     total_samples = 0
 
     total_errors = 0
     total_words = 0
 
     for batch in dataloader:
-        # ----------------------------------------------------
+        # ==================================================
         # Input
-        # ----------------------------------------------------
+        # ==================================================
+
         lh_pose = batch["left"].to(device)
         rh_pose = batch["right"].to(device)
 
@@ -169,100 +157,67 @@ def train_one_epoch(model, dataloader, criterion, optimizer, device, blank_id):
         gloss_ids = batch["gloss_ids"].to(device)
         text_attention_mask = batch["text_attention_mask"].to(device)
 
-        # ----------------------------------------------------
+        # ==================================================
         # Forward
-        # ----------------------------------------------------
+        # ==================================================
         outputs = model(
             lh_pose, rh_pose, lh_rgb, rh_rgb, face, body, gloss_ids, text_attention_mask
         )
 
-        # return 0, 0
-
-        # ----------------------------------------------------
+        # ==================================================
         # CTC targets
-        # ----------------------------------------------------
+        # ==================================================
         target_ids = torch.cat(batch["target_ids"]).to(device)
 
         input_lengths = batch["input_lengths"].to(device)
         target_lengths = batch["target_lengths"].to(device)
 
-        # ----------------------------------------------------
+        # ==================================================
         # Loss
-        # ----------------------------------------------------
+        # ==================================================
         loss_dict = criterion(outputs, target_ids, input_lengths, target_lengths)
 
         loss = loss_dict["loss"]
 
-        # ----------------------------------------------------
-        # Backpropagation
-        # ----------------------------------------------------
         optimizer.zero_grad()
 
         loss.backward()
 
         optimizer.step()
 
-        # ----------------------------------------------------
+        # ==================================================
         # Loss statistics
-        # ----------------------------------------------------
+        # ==================================================
+
         batch_size = lh_pose.size(0)
 
         total_loss += loss.item() * batch_size
+
         total_samples += batch_size
 
-        # ====================================================
-        # CTC prediction
-        # ====================================================
+        # ==================================================
+        # CTC decoding
+        # ==================================================
 
-        # [B, T, C]
         ctc_logits = outputs["ctc_logits"]
 
-        # [B, T]
-        predictions = ctc_logits.argmax(dim=-1)
+        predictions = ctc_greedy_decode(
+            logits=ctc_logits, input_lengths=input_lengths, blank_id=blank_id
+        )
 
-        for i in range(batch_size):
-            # ------------------------------------------------
-            # Prediction
-            # ------------------------------------------------
+        targets = decode_targets(target_ids=target_ids, target_lengths=target_lengths)
 
-            pred = predictions[i]
+        # ==================================================
+        # WER
+        # ==================================================
+        batch_errors, batch_words = compute_wer(predictions, targets)
+        total_errors += batch_errors
+        total_words += batch_words
 
-            # Remove padding timesteps
-            pred = pred[: input_lengths[i]]
-
-            # CTC collapse:
-            # [A, A, B, B, B, C] -> [A, B, C]
-            pred = torch.unique_consecutive(pred)
-
-            # Remove CTC blank
-            pred = pred[pred != blank_id]
-
-            pred = pred.cpu().tolist()
-
-            # ------------------------------------------------
-            # Ground truth
-            # ------------------------------------------------
-
-            start = target_lengths[:i].sum().item()
-
-            end = start + target_lengths[i].item()
-
-            target = target_ids[start:end].cpu().tolist()
-
-            # ------------------------------------------------
-            # Edit distance
-            # ------------------------------------------------
-
-            errors = edit_distance(pred, target)
-
-            total_errors += errors
-            total_words += len(target)
-
-    # --------------------------------------------------------
+    # ======================================================
     # Epoch statistics
-    # --------------------------------------------------------
-
-    avg_loss = total_loss / total_samples
+    # ======================================================
+    avg_loss = total_loss / total_samples if total_samples > 0 else 0.0
 
     wer = total_errors / total_words if total_words > 0 else 0.0
 
@@ -316,39 +271,17 @@ def validate(model, dataloader, criterion, device, blank_id):
         ctc_logits = outputs["ctc_logits"]
 
         # [B, T, C]
-        predictions = ctc_logits.argmax(dim=-1)
+        predictions = ctc_greedy_decode(
+            logits=ctc_logits, input_lengths=input_lengths, blank_id=blank_id
+        )
 
-        for i in range(batch_size):
-            pred = predictions[i]
+        targets = decode_targets(target_ids=target_ids, target_lengths=target_lengths)
 
-            # Only use valid timesteps
-            pred = pred[: input_lengths[i]]
-
-            pred = torch.unique_consecutive(pred)
-
-            # Remove blank
-            pred = pred[pred != blank_id]
-
-            pred = pred.cpu().tolist()
-
-            # ---------------------------------
-            # Ground truth
-            # ---------------------------------
-            start = target_lengths[:i].sum().item()
-            end = start + target_lengths[i].item()
-
-            target = target_ids[start:end].cpu().tolist()
-
-            # ---------------------------------
-            # Edit distance
-            # ---------------------------------
-            errors = edit_distance(pred, target)
-
-            total_errors += errors
-            total_words += len(target)
+        batch_errors, batch_words = compute_wer(predictions, targets)
+        total_errors += batch_errors
+        total_words += batch_words
 
     avg_loss = total_loss / total_samples if total_samples > 0 else 0.0
-
     wer = total_errors / total_words if total_words > 0 else 0.0
 
     return avg_loss, wer
@@ -356,12 +289,23 @@ def validate(model, dataloader, criterion, device, blank_id):
 
 def main(config_path: str):
     cfg = load_config(config_path)
+
     max_frames = cfg.dataset.max_frames
+
     seed = cfg.project.seed
+
+    save_checkpoints_dir = Path(cfg.checkpoint.save_dir)
+    save_checkpoints_dir.mkdir(parents=True, exist_ok=True)
+
+    num_epochs = cfg.training.epochs
+
+    best_dev_wer = float("inf")
 
     set_seed(seed)
 
     device = get_device(cfg)
+
+    logger = get_logger(name="cslr", log_dir=cfg.logging.log_dir)
 
     train_dataset = build_dataset(cfg, phase="train")
     dev_dataset = build_dataset(cfg, phase="dev")
@@ -391,7 +335,9 @@ def main(config_path: str):
 
     optimizer = build_optimizer(model, cfg)
 
-    num_epochs = cfg.training.epochs
+    scheduler = build_scheduler(optimizer, cfg)
+
+    logger.info("Start training")
 
     for epoch in range(1, num_epochs + 1):
         train_loss, train_wer = train_one_epoch(
@@ -401,48 +347,59 @@ def main(config_path: str):
         dev_loss, dev_wer = validate(
             model, dev_loader, criterion, device, train_dataset.blank_id
         )
-        print(
-            f"Epoch [{epoch:03d}/{num_epochs:03d}] "
-            f"| Train Loss: {train_loss:.4f} "
-            f"| Train WER: {train_wer * 100:.2f}% "
-            f"| Val Loss: {dev_loss:.4f} "
-            f"| Val WER: {dev_wer * 100:.2f}%"
+
+        # =========================
+        # Save last checkpoint
+        # =========================
+        save_checkpoint(
+            path=save_checkpoints_dir / "last_model.pth",
+            epoch=epoch,
+            model=model,
+            optimizer=optimizer,
+            scheduler=scheduler,
+            best_dev_wer=best_dev_wer,
+            train_loss=train_loss,
+            train_wer=train_wer,
+            dev_loss=dev_loss,
+            dev_wer=dev_wer,
         )
 
-        # ----------------------------------------------------
-        # Save best model
-        # ----------------------------------------------------
-        # if dev_acc > best_accuracy:
-        #     best_accuracy = dev_acc
+        # =========================
+        # Save best checkpoint
+        # =========================
+        if dev_wer < best_dev_wer:
+            best_dev_wer = dev_wer
+            save_path = save_checkpoints_dir / f"epoch_{epoch}_best_model.pth"
+            save_checkpoint(
+                path=save_path,
+                epoch=epoch,
+                model=model,
+                optimizer=optimizer,
+                scheduler=scheduler,
+                best_dev_wer=best_dev_wer,
+                train_loss=train_loss,
+                train_wer=train_wer,
+                dev_loss=dev_loss,
+                dev_wer=dev_wer,
+            )
+            logger.info(
+                f"Epoch [{epoch:03d}/{num_epochs:03d}] "
+                f"| Train Loss: {train_loss:.4f} "
+                f"| Train WER: {train_wer * 100:.2f}% "
+                f"| Val Loss: {dev_loss:.4f} "
+                f"| Val WER: {dev_wer * 100:.2f}%"
+                f"| → Best model saved: {save_path}"
+            )
+        else:
+            logger.info(
+                f"Epoch [{epoch:03d}/{num_epochs:03d}] "
+                f"| Train Loss: {train_loss:.4f} "
+                f"| Train WER: {train_wer * 100:.2f}% "
+                f"| Val Loss: {dev_loss:.4f} "
+                f"| Val WER: {dev_wer * 100:.2f}%"
+            )
 
-        #     save_dir = Path(cfg.checkpoint.save_dir)
-
-        #     save_dir.mkdir(parents=True, exist_ok=True)
-
-        #     save_path = save_dir / cfg.checkpoint.filename
-
-        #     torch.save(
-        #         {
-        #             "epoch": epoch,
-        #             "model_state_dict": model.state_dict(),
-        #             "optimizer_state_dict": optimizer.state_dict(),
-        #             "val_accuracy": dev_acc,
-        #             "config": cfg,
-        #         },
-        #         save_path,
-        #     )
-
-        #     print(f"  → Best model saved: {save_path}")
-
-        # break
-
-
-# def test_model(config_path: str):
-#     config = load_config(config_path)
-#     model = ImageEncoder(config=config)
-
-#     batch_size = 2
-#     lh
+        scheduler.step()
 
 
 # ============================================================
