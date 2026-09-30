@@ -16,7 +16,7 @@ dataset:
 
   use_rgb: false
 
-  max_frames: 512
+  max_frames: 256
 
   phase:
     train: train
@@ -157,8 +157,9 @@ optimizer:
 
 scheduler:
   name: "cosine"
+  t_max: 100
 
-  min_lr: 1.0e-6
+  eta_min: 1.0e-6
 
   warmup_epochs: 5
 
