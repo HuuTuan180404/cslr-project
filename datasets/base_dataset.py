@@ -98,7 +98,11 @@ class BaseSignLanguageDataset(Dataset, ABC):
             self.vocab["<PAD>"] = 0  # Padding token
             self.vocab["<UNK>"] = len(self.vocab)
             self.vocab["<BLANK>"] = len(self.vocab)
-
+        if self.vocab is None:
+            raise ValueError(
+                f"Vocabulary is None for phase='{self.phase}'. "
+                "Please provide `vocab` when creating the test dataset."
+            )
         self.blank_id = self.vocab["<BLANK>"]
         self.unk_id = self.vocab["<UNK>"]
 
