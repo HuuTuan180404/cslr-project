@@ -177,13 +177,11 @@ def process_frames():
             # ------------------------------------------------
             # Reset for every sample
             # ------------------------------------------------
-
             previous_bbox = {"left": None, "right": None}
 
             # ------------------------------------------------
             # Process frames
             # ------------------------------------------------
-
             for frame_idx, frame_path in enumerate(frame_paths):
                 frame = cv2.imread(str(frame_path))
 
@@ -218,17 +216,13 @@ def process_frames():
                         # --------------------------------------------
                         # BBox
                         # --------------------------------------------
-
                         bbox = get_bbox_from_landmarks(
-                            hand_landmarks,
-                            image_width,
-                            image_height,
+                            hand_landmarks, image_width, image_height
                         )
 
                         # --------------------------------------------
                         # Smoothing
                         # --------------------------------------------
-
                         bbox = smooth_bbox(bbox, previous_bbox[hand_label], ALPHA)
 
                         previous_bbox[hand_label] = bbox.copy()
