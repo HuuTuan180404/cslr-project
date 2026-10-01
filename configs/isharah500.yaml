@@ -204,7 +204,7 @@ checkpoint:
 
   save_last: true
 
-  filename: "best_model.pth"
+  resume_path: "last_model.pth"
 
   monitor: val_wer
   mode: min
@@ -254,6 +254,7 @@ classifier:
 # ------------------------------------------------------------
 training:
   epochs: 100
+  resume: true
   device: cuda
 
   optimizer:
