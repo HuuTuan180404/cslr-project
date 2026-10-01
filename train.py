@@ -16,6 +16,7 @@ from models.model import CSLRModel
 from losses.total_loss import TotalLoss
 
 from utils.logger import get_logger
+from utils.plot import plot_training_history
 from utils.checkpoint import save_checkpoint, load_checkpoint
 from utils.metrics import ctc_greedy_decode, decode_targets, compute_wer
 
@@ -353,17 +354,27 @@ def main(cfg_path: str):
     seed = cfg.project.seed
 
     save_ckpt_dir = Path(cfg.checkpoint.save_dir)
+    save_ckpt_dir = save_ckpt_dir / cfg.dataset.benchmark
     save_ckpt_dir.mkdir(parents=True, exist_ok=True)
 
     num_epochs = cfg.training.epochs
 
     best_dev_wer = float("inf")
 
+    history = {
+        "train_loss": [],
+        "train_wer": [],
+        "dev_loss": [],
+        "dev_wer": [],
+    }
+
     set_seed(seed)
 
     device = get_device(cfg)
 
-    logger = get_logger(name="cslr", log_dir=cfg.logging.log_dir)
+    logger = get_logger(
+        name="cslr", log_dir=f"{cfg.logging.log_dir}/{cfg.dataset.benchmark}"
+    )
 
     train_set = build_dataset(cfg, phase="train")
     vocab = train_set.vocab
@@ -417,6 +428,11 @@ def main(cfg_path: str):
             model, dev_loader, criterion, device, train_set.blank_id
         )
 
+        history["train_loss"].append(train_loss)
+        history["train_wer"].append(train_wer)
+        history["dev_loss"].append(dev_loss)
+        history["dev_wer"].append(dev_wer)
+
         save_checkpoint(
             path=save_ckpt_dir / "last_model.pth",
             epoch=epoch,
@@ -465,6 +481,11 @@ def main(cfg_path: str):
             )
 
         scheduler.step()
+
+    if cfg.plot.enabled:
+        plot_training_history(
+            history, save_dir=f"{cfg.logging.log_dir}/{cfg.dataset.benchmark}"
+        )
 
     logger.info("TESTING THE BEST CHECKPOINT")
     logger.info("START INFERENCE")
