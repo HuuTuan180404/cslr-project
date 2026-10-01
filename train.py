@@ -1,22 +1,22 @@
-import argparse
-import random
-from pathlib import Path
-from types import SimpleNamespace
-import numpy as np
 import torch
-from omegaconf import OmegaConf, DictConfig
+import random
+import argparse
+import numpy as np
+import torch.nn as nn
+from tqdm import tqdm
+from pathlib import Path
 from torch.utils.data import DataLoader
+from omegaconf import OmegaConf, DictConfig
 
 from datasets.utils import cslr_collate_fn
 from datasets.isharah500 import ISharah500Dataset
-import torch.nn as nn
 
 from models.model import CSLRModel
 
 from losses.total_loss import TotalLoss
 
-from utils.checkpoint import save_checkpoint
 from utils.logger import get_logger
+from utils.checkpoint import save_checkpoint, load_checkpoint
 from utils.metrics import ctc_greedy_decode, decode_targets, compute_wer
 
 
@@ -55,13 +55,13 @@ def get_device(config):
     return torch.device(device)
 
 
-def build_dataset(config, phase: str):
+def build_dataset(config, phase: str, vocab=None):
     dataset_name = config.dataset.benchmark.lower()
 
     if dataset_name == "isharah500":
         pass
 
-    return ISharah500Dataset(config=config, phase=phase)
+    return ISharah500Dataset(config=config, phase=phase, vocab=vocab)
 
 
 def build_dataloader(dataset, config, phase: str, collate_fn=None):
@@ -287,15 +287,73 @@ def validate(model, dataloader, criterion, device, blank_id):
     return avg_loss, wer
 
 
-def main(config_path: str):
-    cfg = load_config(config_path)
+@torch.no_grad()
+def inference(model, dataloader, device, blank_id):
+    model.eval()
+
+    total_errors = 0
+    total_words = 0
+
+    all_predictions = []
+    all_targets = []
+
+    for batch in tqdm(dataloader, desc="Inference", unit="batch"):
+        lh_pose = batch["left"].to(device)
+        rh_pose = batch["right"].to(device)
+
+        lh_rgb = batch["rgb_left"].to(device) if batch["rgb_left"] is not None else None
+
+        rh_rgb = (
+            batch["rgb_right"].to(device) if batch["rgb_right"] is not None else None
+        )
+
+        face = batch["face"].to(device) if batch["face"] is not None else None
+
+        body = batch["body"].to(device) if batch["body"] is not None else None
+
+        gloss_ids = batch["gloss_ids"].to(device)
+        text_attention_mask = batch["text_attention_mask"].to(device)
+
+        outputs = model(
+            lh_pose, rh_pose, lh_rgb, rh_rgb, face, body, gloss_ids, text_attention_mask
+        )
+
+        ctc_logits = outputs["ctc_logits"]
+
+        input_lengths = batch["input_lengths"].to(device)
+
+        predictions = ctc_greedy_decode(
+            logits=ctc_logits, input_lengths=input_lengths, blank_id=blank_id
+        )
+
+        target_ids = torch.cat(batch["target_ids"]).to(device)
+
+        target_lengths = batch["target_lengths"].to(device)
+
+        targets = decode_targets(target_ids=target_ids, target_lengths=target_lengths)
+
+        batch_errors, batch_words = compute_wer(predictions, targets)
+
+        total_errors += batch_errors
+        total_words += batch_words
+
+        all_predictions.extend(predictions)
+        all_targets.extend(targets)
+
+    wer = total_errors / total_words if total_words > 0 else 0.0
+
+    return wer, all_predictions, all_targets
+
+
+def main(cfg_path: str):
+    cfg = load_config(cfg_path)
 
     max_frames = cfg.dataset.max_frames
 
     seed = cfg.project.seed
 
-    save_checkpoints_dir = Path(cfg.checkpoint.save_dir)
-    save_checkpoints_dir.mkdir(parents=True, exist_ok=True)
+    save_ckpt_dir = Path(cfg.checkpoint.save_dir)
+    save_ckpt_dir.mkdir(parents=True, exist_ok=True)
 
     num_epochs = cfg.training.epochs
 
@@ -307,25 +365,21 @@ def main(config_path: str):
 
     logger = get_logger(name="cslr", log_dir=cfg.logging.log_dir)
 
-    train_dataset = build_dataset(cfg, phase="train")
-    dev_dataset = build_dataset(cfg, phase="dev")
-    # test_dataset = build_dataset(cfg, phase="test")
+    train_set = build_dataset(cfg, phase="train")
+    vocab = train_set.vocab
+    dev_set = build_dataset(cfg, phase="dev", vocab=vocab)
 
     train_loader = build_dataloader(
-        train_dataset,
+        train_set,
         cfg,
         "train",
-        lambda batch: cslr_collate_fn(
-            batch, vocab=train_dataset.vocab, max_frames=max_frames
-        ),
+        lambda batch: cslr_collate_fn(batch, vocab=vocab, max_frames=max_frames),
     )
     dev_loader = build_dataloader(
-        dev_dataset,
+        dev_set,
         cfg,
         "dev",
-        lambda batch: cslr_collate_fn(
-            batch, vocab=train_dataset.vocab, max_frames=max_frames
-        ),
+        lambda batch: cslr_collate_fn(batch, vocab=vocab, max_frames=max_frames),
     )
 
     model = build_model(cfg=cfg)
@@ -337,22 +391,34 @@ def main(config_path: str):
 
     scheduler = build_scheduler(optimizer, cfg)
 
-    logger.info("Start training")
+    start_epoch = 1
+    if cfg.training.resume:
+        start_epoch, best_dev_wer = load_checkpoint(
+            path=save_ckpt_dir / cfg.checkpoint.resume_path,
+            model=model,
+            optimizer=optimizer,
+            scheduler=scheduler,
+            device=device,
+        )
+        logger.info(
+            f"Resume training from checkpoint: \n"
+            f"\t\tStart epoch      : {start_epoch}\n"
+            f"\t\tBest Dev WER     : {best_dev_wer * 100:.2f}%"
+        )
+    else:
+        logger.info("Start training")
 
-    for epoch in range(1, num_epochs + 1):
+    for epoch in range(start_epoch, num_epochs + 1):
         train_loss, train_wer = train_one_epoch(
-            model, train_loader, criterion, optimizer, device, train_dataset.blank_id
+            model, train_loader, criterion, optimizer, device, train_set.blank_id
         )
 
         dev_loss, dev_wer = validate(
-            model, dev_loader, criterion, device, train_dataset.blank_id
+            model, dev_loader, criterion, device, train_set.blank_id
         )
 
-        # =========================
-        # Save last checkpoint
-        # =========================
         save_checkpoint(
-            path=save_checkpoints_dir / "last_model.pth",
+            path=save_ckpt_dir / "last_model.pth",
             epoch=epoch,
             model=model,
             optimizer=optimizer,
@@ -362,14 +428,12 @@ def main(config_path: str):
             train_wer=train_wer,
             dev_loss=dev_loss,
             dev_wer=dev_wer,
+            vocab=vocab,
         )
 
-        # =========================
-        # Save best checkpoint
-        # =========================
         if dev_wer < best_dev_wer:
             best_dev_wer = dev_wer
-            save_path = save_checkpoints_dir / f"epoch_{epoch}_best_model.pth"
+            save_path = save_ckpt_dir / "best_model.pth"
             save_checkpoint(
                 path=save_path,
                 epoch=epoch,
@@ -381,6 +445,7 @@ def main(config_path: str):
                 train_wer=train_wer,
                 dev_loss=dev_loss,
                 dev_wer=dev_wer,
+                vocab=vocab,
             )
             logger.info(
                 f"Epoch [{epoch:03d}/{num_epochs:03d}] "
@@ -400,6 +465,32 @@ def main(config_path: str):
             )
 
         scheduler.step()
+
+    logger.info("TESTING THE BEST CHECKPOINT")
+    logger.info("START INFERENCE")
+
+    best_ckpt_path = save_ckpt_dir / "best_model.pth"
+
+    if not best_ckpt_path.exists():
+        raise FileNotFoundError(f"Checkpoint not found: {best_ckpt_path}")
+
+    best_ckpt = torch.load(best_ckpt_path, map_location=device, weights_only=False)
+
+    model.load_state_dict(best_ckpt["model_state_dict"])
+
+    ckp_vocab = best_ckpt["vocab"]
+
+    test_set = build_dataset(cfg, phase="test", vocab=ckp_vocab)
+    test_loader = build_dataloader(
+        test_set,
+        cfg,
+        "test",
+        lambda batch: cslr_collate_fn(batch, vocab=ckp_vocab, max_frames=max_frames),
+    )
+
+    wer, _, _ = inference(model, test_loader, device, test_set.blank_id)
+
+    logger.info(f"Test WER: {wer * 100:.2f}%")
 
 
 # ============================================================
