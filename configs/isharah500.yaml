@@ -6,6 +6,30 @@ project:
   seed: 42
 
 
+training:
+  epochs: 100
+  resume: false
+  device: cuda
+
+  optimizer:
+    name: adamw
+    lr: 0.0001
+    weight_decay: 0.01
+
+  scheduler:
+    name: cosine
+    warmup_epochs: 5
+
+  gradient_clip:
+    enabled: true
+    max_norm: 5.0
+
+  mixed_precision:
+    enabled: true
+
+  accumulation_steps: 1
+
+
 # ------------------------------------------------------------
 # 2. DATASET
 # ------------------------------------------------------------
@@ -217,68 +241,23 @@ checkpoint:
 logging:
   log_dir: "./logs"
 
-  experiment_name: "ishara500_siformer"
+  experiment_name: "ishara500"
 
   tensorboard: true
 
   print_interval: 10
 
 
-# ------------------------------------------------------------
-# 8. TEMPORAL ENCODER
-# ------------------------------------------------------------
-temporal:
-  encoder: transformer
-
-  d_model: 512
-  num_layers: 4
-  num_heads: 8
-
-  dim_feedforward: 2048
-
-  dropout: 0.1
-
-  activation: gelu
-
-
-# ------------------------------------------------------------
-# 9. CLASSIFIER
-# ------------------------------------------------------------
 classifier:
   type: ctc
   dropout: 0.1
 
 
-# ------------------------------------------------------------
-# 10. TRAINING
-# ------------------------------------------------------------
-training:
-  epochs: 100
-  resume: true
-  device: cuda
 
-  optimizer:
-    name: adamw
-    lr: 0.0001
-    weight_decay: 0.01
+plot:
+  enabled: true
+  save_dir: "./plots"
 
-  scheduler:
-    name: cosine
-    warmup_epochs: 5
-
-  gradient_clip:
-    enabled: true
-    max_norm: 5.0
-
-  mixed_precision:
-    enabled: true
-
-  accumulation_steps: 1
-
-
-# ------------------------------------------------------------
-# 11. LOSS
-# ------------------------------------------------------------
 loss:
   type: ctc
   lambda_contrastive: 0.6
@@ -287,12 +266,3 @@ loss:
   ctc:
     blank: 0
     zero_infinity: true
-
-# ------------------------------------------------------------
-# 14. DEVICE
-# ------------------------------------------------------------
-device:
-  accelerator: cuda
-  gpu_ids: [0]
-
-  deterministic: false
