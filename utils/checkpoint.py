@@ -14,6 +14,7 @@ def save_checkpoint(
     train_wer,
     dev_loss,
     dev_wer,
+    vocab,
 ):
     os.makedirs(os.path.dirname(path), exist_ok=True)
 
@@ -27,6 +28,7 @@ def save_checkpoint(
         "train_wer": train_wer,
         "dev_loss": dev_loss,
         "dev_wer": dev_wer,
+        "vocab": vocab,
     }
 
     torch.save(checkpoint, path)
