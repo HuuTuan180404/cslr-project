@@ -1,5 +1,6 @@
 import os
 import torch
+from pathlib import Path
 
 
 def save_checkpoint(
@@ -32,7 +33,16 @@ def save_checkpoint(
 
 
 def load_checkpoint(path, model, optimizer=None, scheduler=None, device="cpu"):
-    checkpoint = torch.load(path, map_location=device)
+    path = Path(path)
+
+    if not path.exists():
+        raise FileNotFoundError(f"Checkpoint file not found: {path}")
+
+    checkpoint = torch.load(
+        path,
+        map_location=device,
+        weights_only=False,
+    )
 
     model.load_state_dict(checkpoint["model_state_dict"])
 
