@@ -83,8 +83,8 @@ The cropped left-hand and right-hand images are resized to: (112, 112, 3)
 class ISharah500Dataset(BaseSignLanguageDataset):
     """iSharah500 dataset built on :class:`BaseSignLanguageDataset`."""
 
-    def __init__(self, config: Any, phase: str):
-        super().__init__(config=config, phase=phase)
+    def __init__(self, config: Any, phase: str, vocab=None):
+        super().__init__(config=config, phase=phase, vocab=vocab)
 
     def _load_pose(self, path: Path) -> Dict[str, np.ndarray]:
         _key = "keypoints"
