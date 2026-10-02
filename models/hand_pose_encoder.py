@@ -56,10 +56,7 @@ class HandEncoderLayer(nn.Module):
         self.lh_norm1 = nn.LayerNorm(pose_embed_dim)
 
         self.lh_attn = nn.MultiheadAttention(
-            embed_dim=pose_embed_dim,
-            num_heads=pose_num_heads,
-            dropout=dropout,
-            batch_first=True,
+            pose_embed_dim, pose_num_heads, dropout, batch_first=True
         )
 
         self.lh_attn_dropout = nn.Dropout(dropout)
@@ -68,10 +65,7 @@ class HandEncoderLayer(nn.Module):
         self.rh_norm1 = nn.LayerNorm(pose_embed_dim)
 
         self.rh_attn = nn.MultiheadAttention(
-            embed_dim=pose_embed_dim,
-            num_heads=pose_num_heads,
-            dropout=dropout,
-            batch_first=True,
+            pose_embed_dim, pose_num_heads, dropout, batch_first=True
         )
 
         self.rh_attn_dropout = nn.Dropout(dropout)
