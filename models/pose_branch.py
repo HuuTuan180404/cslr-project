@@ -92,11 +92,9 @@ class PoseBranch(nn.Module):
     """
     Transformer-based encoder for pose sequences.
 
-    Input:
-        x: (B, T, input_dim)
+    Input: x: (B, T, input_dim)
 
-    Output:
-        x: (B, T, d_model)
+    Output: x: (B, T, d_model)
     """
 
     def __init__(self, cfg):
