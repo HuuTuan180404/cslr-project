@@ -50,16 +50,7 @@ class TransformerEncoderLayer(nn.Module):
 
 
 class TransformerEncoder(nn.Module):
-    def __init__(
-        self,
-        d_model,
-        num_heads,
-        depth,
-        act: str,
-        mlp_ratio=4,
-        dropout=0.1,
-        pre_norm: bool = False,
-    ):
+    def __init__(self, d_model, num_heads, depth, act, mlp_ratio, dropout, pre_norm):
         super().__init__()
         self.layers = nn.ModuleList(
             [
