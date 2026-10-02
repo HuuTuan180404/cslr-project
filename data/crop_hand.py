@@ -11,8 +11,10 @@ import numpy as np
 
 DATASET_NAME = Path("data/isharah500")
 
-INPUT_DIR = DATASET_NAME / "02"
-OUTPUT_DIR = DATASET_NAME / "02_cropped"
+DIR = "03"
+
+INPUT_DIR = DATASET_NAME / DIR
+OUTPUT_DIR = DATASET_NAME / f"{DIR}_cropped"
 
 IMAGE_SIZE = (112, 112)
 
@@ -32,16 +34,7 @@ MIN_TRACKING_CONFIDENCE = 0.3
 IS_MIRRORED = True  # Set to True if the input images are mirrored (e.g., from a webcam)
 
 
-# ============================================================
-# MEDIAPIPE
-# ============================================================
-
 mp_hands = mp.solutions.hands
-
-
-# ============================================================
-# UTILS
-# ============================================================
 
 
 def get_bbox_from_landmarks(hand_landmarks, image_width, image_height):
@@ -59,10 +52,7 @@ def get_bbox_from_landmarks(hand_landmarks, image_width, image_height):
     x2 = max(0, min(x2, image_width - 1))
     y2 = max(0, min(y2, image_height - 1))
 
-    return np.array(
-        [x1, y1, x2, y2],
-        dtype=np.float32,
-    )
+    return np.array([x1, y1, x2, y2], dtype=np.float32)
 
 
 def add_padding(bbox, image_width, image_height, padding=0.10):
@@ -115,11 +105,7 @@ def create_placeholder():
 
     width, height = IMAGE_SIZE
 
-    return np.full(
-        (height, width, 3),
-        PLACEHOLDER_COLOR,
-        dtype=np.uint8,
-    )
+    return np.full((height, width, 3), PLACEHOLDER_COLOR, dtype=np.uint8)
 
 
 def save_image(image, save_path):
@@ -150,8 +136,9 @@ def process_frames():
         min_detection_confidence=MIN_DETECTION_CONFIDENCE,
         min_tracking_confidence=MIN_TRACKING_CONFIDENCE,
     ) as hands:
-        for sample_idx, sample_id in enumerate(tqdm(sample_ids)):
-            # for sample_idx, sample_id in enumerate(sample_ids):
+        for sample_idx, sample_id in enumerate(
+            tqdm(sample_ids, desc=f"Processing {DIR}", unit="sample")
+        ):
             input_dir = INPUT_DIR / sample_id
             output_dir = OUTPUT_DIR / sample_id
 
@@ -174,14 +161,8 @@ def process_frames():
                 print(f"No frames found: {input_dir}")
                 continue
 
-            # ------------------------------------------------
-            # Reset for every sample
-            # ------------------------------------------------
             previous_bbox = {"left": None, "right": None}
 
-            # ------------------------------------------------
-            # Process frames
-            # ------------------------------------------------
             for frame_idx, frame_path in enumerate(frame_paths):
                 frame = cv2.imread(str(frame_path))
 
@@ -314,4 +295,8 @@ def process_frames():
 # ============================================================
 
 if __name__ == "__main__":
-    process_frames()
+    for dir in ["06", "03", "05", "07", "08", "09", "10", "11", "12", "13", "14"]:
+        DIR = dir
+        INPUT_DIR = DATASET_NAME / dir
+        OUTPUT_DIR = DATASET_NAME / f"{dir}_cropped"
+        process_frames()
