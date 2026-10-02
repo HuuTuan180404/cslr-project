@@ -4,6 +4,26 @@ from typing import Tuple
 import math
 
 
+class WinAttention(nn.Module):
+    def __init__(self, d_model, nhead, window_size=12, dropout=0.1):
+        super().__init__()
+        self.window_size = window_size
+        self.attn = nn.MultiheadAttention(d_model, nhead, dropout, batch_first=True)
+
+    def forward(self, x, y=None, z=None):
+        # x: [B, L, D]
+        B, L, D = x.shape
+        w = self.window_size
+
+        x = x.view(B, -1, w, D)  # [B, num_win, w, D]
+        x = x.reshape(-1, w, D)  # [B*num_win, w, D]
+
+        out, attn_weights = self.attn(x, x, x)
+
+        out = out.reshape(B, -1, w, D).reshape(B, -1, D)
+        return out, attn_weights
+
+
 class CrossAttention(nn.Module):
     def __init__(self, x_dim, y_dim, num_heads, dropout, **kwargs):
         super().__init__()
