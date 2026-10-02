@@ -2,6 +2,48 @@ import torch
 import torch.nn as nn
 from typing import Tuple
 import math
+import numpy as np
+from math import sqrt
+
+
+class SlidingWindowAttention(nn.Module):
+    """
+    Self-attention cho local/short-term context.
+    Input: x: [B, L, D]
+    Output: y: [B, L, D]
+    """
+
+    def __init__(self, d_model, num_heads, window_size=32, dropout=0.1):
+        super().__init__()
+
+        self.d_model = d_model
+        self.num_heads = num_heads
+        self.window_size = window_size
+
+        self.attn = nn.MultiheadAttention(
+            embed_dim=d_model, num_heads=num_heads, dropout=dropout, batch_first=True
+        )
+
+    def forward(self, x):
+        B, L, D = x.shape
+
+        # --------------------------------------------------
+        # Local attention mask
+        # --------------------------------------------------
+        device = x.device
+
+        idx = torch.arange(L, device=device)
+
+        distance = idx[:, None] - idx[None, :]
+
+        # chỉ cho phép attention trong window
+        mask = distance.abs() > self.window_size
+
+        # MultiheadAttention:
+        # True = không được attend
+        y, _ = self.attn(x, x, x, attn_mask=mask, need_weights=False)
+
+        return y
 
 
 class WinAttention(nn.Module):
