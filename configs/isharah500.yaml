@@ -91,7 +91,7 @@ rgb:
   format: jpg
   patch_size: 8
   channels: 3
-  embed_dim: 256
+  embed_dim: 128
   num_heads: 8
 
   left_hand:
@@ -110,7 +110,7 @@ rgb:
 # ------------------------------------------------------------
 dataloader:
   batch_size: 2
-  num_workers: 4
+  num_workers: 2
 
   shuffle: true
 
@@ -141,7 +141,7 @@ model:
   t_branch: # text_branch
     vocab_size: 388
     embed_dim: 256
-    depth: 2
+    depth: 4
     num_heads: 8
     proj_dim: 128
     state_dim: 16
@@ -154,7 +154,7 @@ model:
     d_state: 64 # mamba2
     conv_kernel: 3
     expand: 2
-    depth: 2
+    depth: 4
     num_heads: 8
     proj_dim: 128
 
