@@ -56,7 +56,9 @@ class DualBranchCSLRModel(nn.Module):
             out_dim=self.ctc_num_classes,
         )
 
-        self.contrastive_logit_scale = nn.Parameter(torch.log(torch.tensor(1 / 0.07)))
+        self.contrastive_logit_scale = nn.Parameter(
+            torch.log(torch.tensor(1 / cfg.loss.contrastive.temperature))
+        )
 
     def forward(
         self,
