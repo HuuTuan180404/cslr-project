@@ -25,7 +25,6 @@ htmlcov/
 # Experiment outputs and local data
 checkpoints/*
 !checkpoints/.gitkeep
-logs/*
 !logs/.gitkeep
 experiments/*
 !experiments/.gitkeep
