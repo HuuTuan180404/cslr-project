@@ -1,0 +1,104 @@
+2026-10-05 13:33:01 | INFO | Start training
+2026-10-05 13:50:42 | INFO | Epoch [001/100] | Train Loss: 6.9185 | Train WER: 105.21% | Val Loss: 5.9796 | Val WER: 100.00%| → Best model saved: checkpoints/isharah500/best_model.pth
+2026-10-05 13:52:50 | INFO | Epoch [002/100] | Train Loss: 6.2087 | Train WER: 99.58% | Val Loss: 5.7000 | Val WER: 93.65%| → Best model saved: checkpoints/isharah500/best_model.pth
+2026-10-05 13:54:58 | INFO | Epoch [003/100] | Train Loss: 5.5399 | Train WER: 91.59% | Val Loss: 6.1903 | Val WER: 90.40%| → Best model saved: checkpoints/isharah500/best_model.pth
+2026-10-05 13:57:06 | INFO | Epoch [004/100] | Train Loss: 5.3612 | Train WER: 92.53% | Val Loss: 5.1626 | Val WER: 88.06%| → Best model saved: checkpoints/isharah500/best_model.pth
+2026-10-05 13:59:13 | INFO | Epoch [005/100] | Train Loss: 4.8151 | Train WER: 87.54% | Val Loss: 4.6262 | Val WER: 85.82%| → Best model saved: checkpoints/isharah500/best_model.pth
+2026-10-05 14:01:20 | INFO | Epoch [006/100] | Train Loss: 4.3456 | Train WER: 84.09% | Val Loss: 4.1053 | Val WER: 82.09%| → Best model saved: checkpoints/isharah500/best_model.pth
+2026-10-05 14:03:28 | INFO | Epoch [007/100] | Train Loss: 3.8465 | Train WER: 80.60% | Val Loss: 3.6737 | Val WER: 76.31%| → Best model saved: checkpoints/isharah500/best_model.pth
+2026-10-05 14:05:35 | INFO | Epoch [008/100] | Train Loss: 3.3222 | Train WER: 74.96% | Val Loss: 3.3320 | Val WER: 74.26%| → Best model saved: checkpoints/isharah500/best_model.pth
+2026-10-05 14:07:42 | INFO | Epoch [009/100] | Train Loss: 3.0608 | Train WER: 70.65% | Val Loss: 2.8388 | Val WER: 66.91%| → Best model saved: checkpoints/isharah500/best_model.pth
+2026-10-05 14:09:49 | INFO | Epoch [010/100] | Train Loss: 2.4664 | Train WER: 61.99% | Val Loss: 2.5772 | Val WER: 62.08%| → Best model saved: checkpoints/isharah500/best_model.pth
+2026-10-05 14:11:56 | INFO | Epoch [011/100] | Train Loss: 2.0051 | Train WER: 53.15% | Val Loss: 2.2630 | Val WER: 56.45%| → Best model saved: checkpoints/isharah500/best_model.pth
+2026-10-05 14:14:03 | INFO | Epoch [012/100] | Train Loss: 1.6541 | Train WER: 45.91% | Val Loss: 1.9365 | Val WER: 51.15%| → Best model saved: checkpoints/isharah500/best_model.pth
+2026-10-05 14:16:10 | INFO | Epoch [013/100] | Train Loss: 1.3452 | Train WER: 38.80% | Val Loss: 1.9870 | Val WER: 51.58%
+2026-10-05 14:18:17 | INFO | Epoch [014/100] | Train Loss: 1.1559 | Train WER: 34.47% | Val Loss: 2.0216 | Val WER: 49.57%| → Best model saved: checkpoints/isharah500/best_model.pth
+2026-10-05 14:20:24 | INFO | Epoch [015/100] | Train Loss: 0.8636 | Train WER: 26.66% | Val Loss: 1.7558 | Val WER: 45.32%| → Best model saved: checkpoints/isharah500/best_model.pth
+2026-10-05 14:22:32 | INFO | Epoch [016/100] | Train Loss: 0.7189 | Train WER: 22.37% | Val Loss: 1.7476 | Val WER: 44.17%| → Best model saved: checkpoints/isharah500/best_model.pth
+2026-10-05 14:24:39 | INFO | Epoch [017/100] | Train Loss: 0.6312 | Train WER: 19.79% | Val Loss: 1.8484 | Val WER: 45.51%
+2026-10-05 14:26:47 | INFO | Epoch [018/100] | Train Loss: 0.5505 | Train WER: 17.54% | Val Loss: 1.4701 | Val WER: 37.44%| → Best model saved: checkpoints/isharah500/best_model.pth
+2026-10-05 14:28:54 | INFO | Epoch [019/100] | Train Loss: 0.4958 | Train WER: 15.83% | Val Loss: 1.7015 | Val WER: 40.59%
+2026-10-05 14:31:01 | INFO | Epoch [020/100] | Train Loss: 0.4254 | Train WER: 13.81% | Val Loss: 1.9504 | Val WER: 44.46%
+2026-10-05 14:33:08 | INFO | Epoch [021/100] | Train Loss: 0.3921 | Train WER: 12.48% | Val Loss: 1.5086 | Val WER: 36.87%| → Best model saved: checkpoints/isharah500/best_model.pth
+2026-10-05 14:35:16 | INFO | Epoch [022/100] | Train Loss: 0.3295 | Train WER: 10.49% | Val Loss: 1.4662 | Val WER: 34.38%| → Best model saved: checkpoints/isharah500/best_model.pth
+2026-10-05 14:37:22 | INFO | Epoch [023/100] | Train Loss: 0.2711 | Train WER: 8.88% | Val Loss: 1.5513 | Val WER: 35.05%
+2026-10-05 14:39:27 | INFO | Epoch [024/100] | Train Loss: 0.2352 | Train WER: 7.62% | Val Loss: 1.5729 | Val WER: 36.15%
+2026-10-05 14:41:33 | INFO | Epoch [025/100] | Train Loss: 0.2606 | Train WER: 8.29% | Val Loss: 1.6605 | Val WER: 37.15%
+2026-10-05 14:43:37 | INFO | Epoch [026/100] | Train Loss: 0.2378 | Train WER: 7.60% | Val Loss: 1.6649 | Val WER: 37.54%
+2026-10-05 14:45:45 | INFO | Epoch [027/100] | Train Loss: 0.1788 | Train WER: 5.51% | Val Loss: 1.6019 | Val WER: 35.48%
+2026-10-05 14:48:02 | INFO | Epoch [028/100] | Train Loss: 0.1810 | Train WER: 5.75% | Val Loss: 1.4102 | Val WER: 30.95%| → Best model saved: checkpoints/isharah500/best_model.pth
+2026-10-05 14:50:14 | INFO | Epoch [029/100] | Train Loss: 0.1621 | Train WER: 5.04% | Val Loss: 1.4006 | Val WER: 32.19%
+2026-10-05 14:52:23 | INFO | Epoch [030/100] | Train Loss: 0.2005 | Train WER: 6.11% | Val Loss: 1.3746 | Val WER: 30.13%| → Best model saved: checkpoints/isharah500/best_model.pth
+2026-10-05 14:54:34 | INFO | Epoch [031/100] | Train Loss: 0.1174 | Train WER: 3.66% | Val Loss: 1.5617 | Val WER: 35.72%
+2026-10-05 14:56:45 | INFO | Epoch [032/100] | Train Loss: 0.1280 | Train WER: 3.92% | Val Loss: 1.3800 | Val WER: 29.04%| → Best model saved: checkpoints/isharah500/best_model.pth
+2026-10-05 14:58:58 | INFO | Epoch [033/100] | Train Loss: 0.1222 | Train WER: 3.65% | Val Loss: 1.2707 | Val WER: 28.51%| → Best model saved: checkpoints/isharah500/best_model.pth
+2026-10-05 15:01:07 | INFO | Epoch [034/100] | Train Loss: 0.1600 | Train WER: 5.26% | Val Loss: 1.9481 | Val WER: 39.97%
+2026-10-05 15:03:22 | INFO | Epoch [035/100] | Train Loss: 0.1408 | Train WER: 3.95% | Val Loss: 1.4984 | Val WER: 30.52%
+2026-10-05 15:05:36 | INFO | Epoch [036/100] | Train Loss: 0.0808 | Train WER: 2.33% | Val Loss: 1.4892 | Val WER: 30.66%
+2026-10-05 15:07:45 | INFO | Epoch [037/100] | Train Loss: 0.0947 | Train WER: 2.60% | Val Loss: 1.3810 | Val WER: 29.80%
+2026-10-05 15:09:52 | INFO | Epoch [038/100] | Train Loss: 0.1000 | Train WER: 2.78% | Val Loss: 1.4441 | Val WER: 30.18%
+2026-10-05 15:11:59 | INFO | Epoch [039/100] | Train Loss: 0.1118 | Train WER: 2.97% | Val Loss: 1.4290 | Val WER: 29.89%
+2026-10-05 15:14:05 | INFO | Epoch [040/100] | Train Loss: 0.0608 | Train WER: 1.50% | Val Loss: 1.4918 | Val WER: 30.13%
+2026-10-05 15:16:11 | INFO | Epoch [041/100] | Train Loss: 0.0926 | Train WER: 2.28% | Val Loss: 1.3814 | Val WER: 28.27%| → Best model saved: checkpoints/isharah500/best_model.pth
+2026-10-05 15:18:17 | INFO | Epoch [042/100] | Train Loss: 0.0738 | Train WER: 1.72% | Val Loss: 1.4213 | Val WER: 26.65%| → Best model saved: checkpoints/isharah500/best_model.pth
+2026-10-05 15:20:23 | INFO | Epoch [043/100] | Train Loss: 0.0470 | Train WER: 1.07% | Val Loss: 1.2697 | Val WER: 25.45%| → Best model saved: checkpoints/isharah500/best_model.pth
+2026-10-05 15:22:29 | INFO | Epoch [044/100] | Train Loss: 0.0589 | Train WER: 1.72% | Val Loss: 1.3471 | Val WER: 26.22%
+2026-10-05 15:24:36 | INFO | Epoch [045/100] | Train Loss: 0.0566 | Train WER: 1.55% | Val Loss: 1.4836 | Val WER: 28.75%
+2026-10-05 15:26:41 | INFO | Epoch [046/100] | Train Loss: 0.0371 | Train WER: 1.04% | Val Loss: 1.4006 | Val WER: 26.31%
+2026-10-05 15:28:46 | INFO | Epoch [047/100] | Train Loss: 0.0682 | Train WER: 1.75% | Val Loss: 1.2916 | Val WER: 25.21%| → Best model saved: checkpoints/isharah500/best_model.pth
+2026-10-05 15:30:51 | INFO | Epoch [048/100] | Train Loss: 0.0364 | Train WER: 0.93% | Val Loss: 1.3099 | Val WER: 26.07%
+2026-10-05 15:32:56 | INFO | Epoch [049/100] | Train Loss: 0.0502 | Train WER: 1.36% | Val Loss: 1.4718 | Val WER: 27.41%
+2026-10-05 15:35:01 | INFO | Epoch [050/100] | Train Loss: 0.0369 | Train WER: 0.85% | Val Loss: 1.3879 | Val WER: 25.69%
+2026-10-05 15:37:07 | INFO | Epoch [051/100] | Train Loss: 0.0339 | Train WER: 0.85% | Val Loss: 1.5122 | Val WER: 28.99%
+2026-10-05 15:39:12 | INFO | Epoch [052/100] | Train Loss: 0.0352 | Train WER: 0.85% | Val Loss: 1.5565 | Val WER: 29.51%
+2026-10-05 15:41:18 | INFO | Epoch [053/100] | Train Loss: 0.0246 | Train WER: 0.58% | Val Loss: 1.4289 | Val WER: 27.75%
+2026-10-05 15:43:25 | INFO | Epoch [054/100] | Train Loss: 0.0352 | Train WER: 0.96% | Val Loss: 1.1940 | Val WER: 22.16%| → Best model saved: checkpoints/isharah500/best_model.pth
+2026-10-05 15:45:30 | INFO | Epoch [055/100] | Train Loss: 0.0290 | Train WER: 0.57% | Val Loss: 1.5428 | Val WER: 31.18%
+2026-10-05 15:47:36 | INFO | Epoch [056/100] | Train Loss: 0.0225 | Train WER: 0.58% | Val Loss: 1.2349 | Val WER: 25.12%
+2026-10-05 15:49:42 | INFO | Epoch [057/100] | Train Loss: 0.0323 | Train WER: 0.56% | Val Loss: 1.2022 | Val WER: 22.68%
+2026-10-05 15:51:49 | INFO | Epoch [058/100] | Train Loss: 0.0115 | Train WER: 0.19% | Val Loss: 1.3837 | Val WER: 25.45%
+2026-10-05 15:53:55 | INFO | Epoch [059/100] | Train Loss: 0.0155 | Train WER: 0.29% | Val Loss: 1.1664 | Val WER: 21.87%| → Best model saved: checkpoints/isharah500/best_model.pth
+2026-10-05 15:56:01 | INFO | Epoch [060/100] | Train Loss: 0.0166 | Train WER: 0.37% | Val Loss: 1.4226 | Val WER: 26.55%
+2026-10-05 15:58:07 | INFO | Epoch [061/100] | Train Loss: 0.0119 | Train WER: 0.25% | Val Loss: 1.2470 | Val WER: 24.12%
+2026-10-05 16:00:13 | INFO | Epoch [062/100] | Train Loss: 0.0139 | Train WER: 0.30% | Val Loss: 1.1352 | Val WER: 21.16%| → Best model saved: checkpoints/isharah500/best_model.pth
+2026-10-05 16:02:19 | INFO | Epoch [063/100] | Train Loss: 0.0093 | Train WER: 0.19% | Val Loss: 1.1958 | Val WER: 22.06%
+2026-10-05 16:04:25 | INFO | Epoch [064/100] | Train Loss: 0.0112 | Train WER: 0.22% | Val Loss: 1.1959 | Val WER: 21.44%
+2026-10-05 16:06:31 | INFO | Epoch [065/100] | Train Loss: 0.0098 | Train WER: 0.16% | Val Loss: 1.2883 | Val WER: 23.97%
+2026-10-05 16:08:36 | INFO | Epoch [066/100] | Train Loss: 0.0088 | Train WER: 0.20% | Val Loss: 1.2417 | Val WER: 23.69%
+2026-10-05 16:10:42 | INFO | Epoch [067/100] | Train Loss: 0.0114 | Train WER: 0.26% | Val Loss: 1.1742 | Val WER: 22.54%
+2026-10-05 16:12:47 | INFO | Epoch [068/100] | Train Loss: 0.0105 | Train WER: 0.16% | Val Loss: 1.1497 | Val WER: 21.06%| → Best model saved: checkpoints/isharah500/best_model.pth
+2026-10-05 16:14:53 | INFO | Epoch [069/100] | Train Loss: 0.0052 | Train WER: 0.12% | Val Loss: 1.1190 | Val WER: 21.01%| → Best model saved: checkpoints/isharah500/best_model.pth
+2026-10-05 16:16:59 | INFO | Epoch [070/100] | Train Loss: 0.0058 | Train WER: 0.11% | Val Loss: 1.0590 | Val WER: 18.82%| → Best model saved: checkpoints/isharah500/best_model.pth
+2026-10-05 16:19:05 | INFO | Epoch [071/100] | Train Loss: 0.0059 | Train WER: 0.10% | Val Loss: 1.1135 | Val WER: 20.92%
+2026-10-05 16:21:11 | INFO | Epoch [072/100] | Train Loss: 0.0052 | Train WER: 0.10% | Val Loss: 1.0953 | Val WER: 20.39%
+2026-10-05 16:23:16 | INFO | Epoch [073/100] | Train Loss: 0.0030 | Train WER: 0.07% | Val Loss: 1.1514 | Val WER: 21.16%
+2026-10-05 16:25:22 | INFO | Epoch [074/100] | Train Loss: 0.0047 | Train WER: 0.05% | Val Loss: 1.1445 | Val WER: 20.30%
+2026-10-05 16:27:28 | INFO | Epoch [075/100] | Train Loss: 0.0033 | Train WER: 0.06% | Val Loss: 1.2406 | Val WER: 21.35%
+2026-10-05 16:29:34 | INFO | Epoch [076/100] | Train Loss: 0.0044 | Train WER: 0.05% | Val Loss: 1.1828 | Val WER: 21.35%
+2026-10-05 16:31:39 | INFO | Epoch [077/100] | Train Loss: 0.0028 | Train WER: 0.06% | Val Loss: 1.1415 | Val WER: 19.87%
+2026-10-05 16:33:46 | INFO | Epoch [078/100] | Train Loss: 0.0022 | Train WER: 0.06% | Val Loss: 1.1183 | Val WER: 19.96%
+2026-10-05 16:35:52 | INFO | Epoch [079/100] | Train Loss: 0.0033 | Train WER: 0.04% | Val Loss: 1.0916 | Val WER: 19.34%
+2026-10-05 16:37:58 | INFO | Epoch [080/100] | Train Loss: 0.0021 | Train WER: 0.04% | Val Loss: 1.1321 | Val WER: 20.20%
+2026-10-05 16:40:12 | INFO | Epoch [081/100] | Train Loss: 0.0026 | Train WER: 0.04% | Val Loss: 1.1625 | Val WER: 20.15%
+2026-10-05 16:42:35 | INFO | Epoch [082/100] | Train Loss: 0.0026 | Train WER: 0.03% | Val Loss: 1.0958 | Val WER: 19.39%
+2026-10-05 16:44:41 | INFO | Epoch [083/100] | Train Loss: 0.0026 | Train WER: 0.05% | Val Loss: 1.0649 | Val WER: 19.25%
+2026-10-05 16:46:47 | INFO | Epoch [084/100] | Train Loss: 0.0031 | Train WER: 0.02% | Val Loss: 1.1298 | Val WER: 20.15%
+2026-10-05 16:48:53 | INFO | Epoch [085/100] | Train Loss: 0.0016 | Train WER: 0.03% | Val Loss: 1.1181 | Val WER: 20.34%
+2026-10-05 16:50:59 | INFO | Epoch [086/100] | Train Loss: 0.0016 | Train WER: 0.02% | Val Loss: 1.1952 | Val WER: 20.87%
+2026-10-05 16:53:05 | INFO | Epoch [087/100] | Train Loss: 0.0030 | Train WER: 0.02% | Val Loss: 1.1389 | Val WER: 20.06%
+2026-10-05 16:55:10 | INFO | Epoch [088/100] | Train Loss: 0.0018 | Train WER: 0.02% | Val Loss: 1.1365 | Val WER: 19.68%
+2026-10-05 16:57:16 | INFO | Epoch [089/100] | Train Loss: 0.0024 | Train WER: 0.02% | Val Loss: 1.1524 | Val WER: 20.49%
+2026-10-05 16:59:21 | INFO | Epoch [090/100] | Train Loss: 0.0013 | Train WER: 0.01% | Val Loss: 1.1555 | Val WER: 19.77%
+2026-10-05 17:01:27 | INFO | Epoch [091/100] | Train Loss: 0.0016 | Train WER: 0.02% | Val Loss: 1.1634 | Val WER: 18.96%
+2026-10-05 17:03:32 | INFO | Epoch [092/100] | Train Loss: 0.0017 | Train WER: 0.01% | Val Loss: 1.1372 | Val WER: 19.20%
+2026-10-05 17:05:38 | INFO | Epoch [093/100] | Train Loss: 0.0022 | Train WER: 0.01% | Val Loss: 1.1461 | Val WER: 19.01%
+2026-10-05 17:07:44 | INFO | Epoch [094/100] | Train Loss: 0.0024 | Train WER: 0.01% | Val Loss: 1.1837 | Val WER: 18.91%
+2026-10-05 17:09:49 | INFO | Epoch [095/100] | Train Loss: 0.0010 | Train WER: 0.01% | Val Loss: 1.1533 | Val WER: 18.77%| → Best model saved: checkpoints/isharah500/best_model.pth
+2026-10-05 17:11:55 | INFO | Epoch [096/100] | Train Loss: 0.0015 | Train WER: 0.02% | Val Loss: 1.1394 | Val WER: 18.77%
+2026-10-05 17:14:00 | INFO | Epoch [097/100] | Train Loss: 0.0018 | Train WER: 0.01% | Val Loss: 1.1502 | Val WER: 19.10%
+2026-10-05 17:16:06 | INFO | Epoch [098/100] | Train Loss: 0.0008 | Train WER: 0.01% | Val Loss: 1.1430 | Val WER: 18.48%| → Best model saved: checkpoints/isharah500/best_model.pth
+2026-10-05 17:18:12 | INFO | Epoch [099/100] | Train Loss: 0.0010 | Train WER: 0.01% | Val Loss: 1.1348 | Val WER: 18.48%
+2026-10-05 17:20:18 | INFO | Epoch [100/100] | Train Loss: 0.0011 | Train WER: 0.01% | Val Loss: 1.1288 | Val WER: 18.24%| → Best model saved: checkpoints/isharah500/best_model.pth
+2026-10-05 17:20:18 | INFO | TESTING THE BEST CHECKPOINT
+2026-10-05 17:20:18 | INFO | START INFERENCE
+2026-10-05 17:20:32 | INFO | Test WER: 46.96%

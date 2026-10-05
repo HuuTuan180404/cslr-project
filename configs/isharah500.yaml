@@ -95,10 +95,10 @@ rgb:
   num_heads: 8
 
   left_hand:
-    enabled: $dataset.use_rgb
+    enabled: ${dataset.use_rgb}
 
   right_hand:
-    enabled: $dataset.use_rgb
+    enabled: ${dataset.use_rgb}
 
   transform: true
   normalize: true
@@ -129,6 +129,8 @@ model:
   act: gelu
   dropout: 0.1
 
+  pe_type: sinusoidal
+
   pre_norm: true
 
   pose_rgb_num_heads: 8
@@ -141,7 +143,7 @@ model:
   t_branch: # text_branch
     vocab_size: 388
     embed_dim: 256
-    depth: 2
+    depth: 3
     num_heads: 8
     proj_dim: 128
     state_dim: 16
@@ -154,7 +156,7 @@ model:
     d_state: 64 # mamba2
     conv_kernel: 3
     expand: 2
-    depth: 2
+    depth: 3
     num_heads: 8
     proj_dim: 128
 
@@ -181,12 +183,11 @@ optimizer:
 
 scheduler:
   name: "cosine"
-  t_max: 100
+  t_max: ${training.epochs}
 
   eta_min: 1.0e-6
 
   warmup_epochs: 5
-
 
 
 # ============================================================
@@ -241,17 +242,11 @@ checkpoint:
 logging:
   log_dir: "./logs"
 
-  experiment_name: "ishara500"
+  experiment_name: ${dataset.benchmark}
 
   tensorboard: true
 
   print_interval: 10
-
-
-classifier:
-  type: ctc
-  dropout: 0.1
-
 
 
 plot:
@@ -266,3 +261,6 @@ loss:
   ctc:
     blank: 0
     zero_infinity: true
+  
+  contrastive:
+    temperature: 0.07
