@@ -67,8 +67,6 @@ class MambaTextEncoder(nn.Module):
             padding_idx=padding_idx,
         )
 
-        self.embedding_dropout = nn.Dropout(dropout)
-
         # --------------------------------------------------
         # 2. Mamba blocks
         # --------------------------------------------------
@@ -91,9 +89,6 @@ class MambaTextEncoder(nn.Module):
 
         self.dropout = nn.Dropout(dropout)
 
-        # --------------------------------------------------
-        # 3. Final normalization
-        # --------------------------------------------------
         self.final_norm = nn.LayerNorm(embed_dim)
 
     def masked_mean_pooling(self, x, attention_mask) -> torch.Tensor:
@@ -127,13 +122,8 @@ class MambaTextEncoder(nn.Module):
             sentence_features: [B, D]
         """
 
-        # --------------------------------------------------
-        # Token embedding
-        # --------------------------------------------------
         x = self.embedding(input_ids)
         # [B, L, D]
-
-        x = self.embedding_dropout(x)
 
         # --------------------------------------------------
         # Zero-out padding tokens
@@ -159,18 +149,15 @@ class MambaTextEncoder(nn.Module):
             # Keep padding positions zero
             x = x * mask
 
-        # --------------------------------------------------
-        # Final normalization
-        # --------------------------------------------------
         x = self.final_norm(x)
 
         # --------------------------------------------------
         # Sentence-level representation
         # --------------------------------------------------
-        sentence_features = self.masked_mean_pooling(x, attention_mask)
+        # sentence_features = self.masked_mean_pooling(x, attention_mask)
         # [B, D]
 
-        return x, sentence_features
+        return x
 
 
 class TextBranch(nn.Module):
@@ -187,25 +174,42 @@ class TextBranch(nn.Module):
             dropout=config.model.dropout,
         )
 
-        self.projection = MLP(
-            in_dim=config.model.t_branch.embed_dim,
-            mlp_ratio=2,
-            act=config.model.act,
-            dropout=config.model.dropout,
-            out_dim=config.model.t_branch.proj_dim,
+        self.projection = nn.Linear(
+            config.model.t_branch.embed_dim, config.model.t_branch.proj_dim
         )
 
     def forward(self, input_ids, attention_mask):
 
-        token_features, sentence_features = self.encoder.forward(
+        token_features = self.encoder.forward(
             input_ids=input_ids, attention_mask=attention_mask
         )
 
-        z_text = self.projection(sentence_features)  # [B, D]
-        z_text = F.normalize(z_text, dim=-1)
+        sentence_features = self.masked_mean_pooling(token_features, attention_mask)
+        # [B, D]
 
-        return {
-            "token_features": token_features,
-            "sentence_features": sentence_features,
-            "z_text": z_text,
-        }
+        text_featires = self.projection(sentence_features)  # [B, D]
+
+        return text_featires
+
+    def masked_mean_pooling(self, x, attention_mask) -> torch.Tensor:
+        """
+        x: [B, L, D]
+        attention_mask: [B, L]
+            1 = valid token
+            0 = padding
+
+        Return: # [B, D]
+        """
+
+        mask = attention_mask.unsqueeze(-1).float()
+        # [B, L, 1]
+
+        x = x * mask
+
+        summed = x.sum(dim=1)
+        # [B, D]
+
+        count = mask.sum(dim=1).clamp(min=1e-6)
+        # [B, 1]
+
+        return summed / count

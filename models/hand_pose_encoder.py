@@ -7,6 +7,107 @@ from models.mlp import MLP
 from .attention import CrossAttention
 
 
+class HandEncoder(nn.Module):
+    """
+    Transformer-based encoder for pose sequences.
+
+    Input:
+        x: (B, T, input_dim)
+
+    Output:
+        x: (B, T, d_model)
+    """
+
+    def __init__(
+        self,
+        pose_embed_dim,
+        pose_num_heads,
+        rgb_image_size,
+        rgb_patch_size,
+        rgb_in_channels,
+        rgb_embed_dim,
+        act,
+        rgb_num_heads,
+        depth,
+        dropout,
+        pose_rgb_num_heads,
+        pose_pose_num_heads,
+        mlp_ratio,
+        use_rgb,
+        pre_norm,
+        pe_type,
+    ):
+
+        super().__init__()
+
+        self.layers = nn.ModuleList(
+            [
+                HandEncoderLayer(
+                    pose_embed_dim=pose_embed_dim,
+                    pose_num_heads=pose_num_heads,
+                    rgb_embed_dim=rgb_embed_dim,
+                    act=act,
+                    mlp_ratio=mlp_ratio,
+                    dropout=dropout,
+                    pose_rgb_num_heads=pose_rgb_num_heads,
+                    pose_pose_num_heads=pose_pose_num_heads,
+                    use_rgb=use_rgb,
+                    pre_norm=pre_norm,
+                )
+                for _ in range(depth)
+            ]
+        )
+
+        # ============================================================
+        # RGB: Visual Stream
+        # ============================================================
+        self.lh_rgb = (
+            VisualEncoder(
+                image_size=rgb_image_size,
+                patch_size=rgb_patch_size,
+                in_channels=rgb_in_channels,
+                act=act,
+                embed_dim=rgb_embed_dim,
+                depth=depth,
+                num_heads=rgb_num_heads,
+                mlp_ratio=mlp_ratio,
+                dropout=dropout,
+                pre_norm=pre_norm,
+            )
+            if use_rgb
+            else None
+        )
+
+        self.rh_rgb = (
+            VisualEncoder(
+                image_size=rgb_image_size,
+                patch_size=rgb_patch_size,
+                in_channels=rgb_in_channels,
+                act=act,
+                embed_dim=rgb_embed_dim,
+                depth=depth,
+                num_heads=rgb_num_heads,
+                mlp_ratio=mlp_ratio,
+                dropout=dropout,
+                pre_norm=pre_norm,
+            )
+            if use_rgb
+            else None
+        )
+
+    def forward(self, lh_pose, rh_pose, lh_rgb, rh_rgb):
+
+        for layer in self.layers:
+            if self.lh_rgb is not None:
+                lh_rgb = self.lh_rgb(lh_rgb)
+            if self.rh_rgb is not None:
+                rh_rgb = self.rh_rgb(rh_rgb)
+
+            lh_pose, rh_pose, lh_rgb, rh_rgb = layer(lh_pose, rh_pose, lh_rgb, rh_rgb)
+
+        return lh_pose, rh_pose
+
+
 class HandEncoderLayer(nn.Module):
     def __init__(
         self,
@@ -232,110 +333,3 @@ class HandEncoderLayer(nn.Module):
             rh_mlp_out = self.rh_norm3(rh_attn_out + rh_mlp_out)
 
         return lh_mlp_out, rh_mlp_out, lh_rgb, rh_rgb
-
-
-class HandEncoder(nn.Module):
-    """
-    Transformer-based encoder for pose sequences.
-
-    Input:
-        x: (B, T, input_dim)
-
-    Output:
-        x: (B, T, d_model)
-    """
-
-    def __init__(
-        self,
-        hand_pose_input_dim,
-        pose_embed_dim,
-        pose_num_heads,
-        rgb_image_size,
-        rgb_patch_size,
-        rgb_in_channels,
-        rgb_embed_dim,
-        act,
-        rgb_num_heads,
-        depth,
-        dropout,
-        pose_rgb_num_heads,
-        pose_pose_num_heads,
-        mlp_ratio,
-        use_rgb,
-        pre_norm,
-    ):
-
-        super().__init__()
-
-        self.lh_pose_proj = nn.Linear(hand_pose_input_dim, pose_embed_dim)
-        self.rh_pose_proj = nn.Linear(hand_pose_input_dim, pose_embed_dim)
-
-        self.layers = nn.ModuleList(
-            [
-                HandEncoderLayer(
-                    pose_embed_dim=pose_embed_dim,
-                    pose_num_heads=pose_num_heads,
-                    rgb_embed_dim=rgb_embed_dim,
-                    act=act,
-                    mlp_ratio=mlp_ratio,
-                    dropout=dropout,
-                    pose_rgb_num_heads=pose_rgb_num_heads,
-                    pose_pose_num_heads=pose_pose_num_heads,
-                    use_rgb=use_rgb,
-                    pre_norm=pre_norm,
-                )
-                for _ in range(depth)
-            ]
-        )
-
-        # ============================================================
-        # RGB: Visual Stream
-        # ============================================================
-        self.lh_rgb = (
-            VisualEncoder(
-                image_size=rgb_image_size,
-                patch_size=rgb_patch_size,
-                in_channels=rgb_in_channels,
-                act=act,
-                embed_dim=rgb_embed_dim,
-                depth=depth,
-                num_heads=rgb_num_heads,
-                mlp_ratio=mlp_ratio,
-                dropout=dropout,
-                pre_norm=pre_norm,
-            )
-            if use_rgb
-            else None
-        )
-
-        self.rh_rgb = (
-            VisualEncoder(
-                image_size=rgb_image_size,
-                patch_size=rgb_patch_size,
-                in_channels=rgb_in_channels,
-                act=act,
-                embed_dim=rgb_embed_dim,
-                depth=depth,
-                num_heads=rgb_num_heads,
-                mlp_ratio=mlp_ratio,
-                dropout=dropout,
-                pre_norm=pre_norm,
-            )
-            if use_rgb
-            else None
-        )
-
-    def forward(self, lh_pose, rh_pose, lh_rgb, rh_rgb):
-
-        lh_pose = self.lh_pose_proj(lh_pose)
-        rh_pose = self.rh_pose_proj(rh_pose)
-
-        for layer in self.layers:
-            if self.lh_rgb is not None:
-                lh_rgb = self.lh_rgb(lh_rgb)
-            if self.rh_rgb is not None:
-                rh_rgb = self.rh_rgb(rh_rgb)
-
-            lh_pose, rh_pose, lh_rgb, rh_rgb = layer(lh_pose, rh_pose, lh_rgb, rh_rgb)
-
-        return lh_pose, rh_pose

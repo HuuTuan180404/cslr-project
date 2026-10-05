@@ -157,12 +157,21 @@ def train_one_epoch(model, dataloader, criterion, optimizer, device, blank_id):
 
         gloss_ids = batch["gloss_ids"].to(device)
         text_attention_mask = batch["text_attention_mask"].to(device)
+        input_lengths = batch["input_lengths"].to(device)
 
         # ==================================================
         # Forward
         # ==================================================
         outputs = model(
-            lh_pose, rh_pose, lh_rgb, rh_rgb, face, body, gloss_ids, text_attention_mask
+            lh_pose,
+            rh_pose,
+            lh_rgb,
+            rh_rgb,
+            face,
+            body,
+            gloss_ids,
+            text_attention_mask,
+            input_lengths,
         )
 
         # ==================================================
@@ -170,7 +179,6 @@ def train_one_epoch(model, dataloader, criterion, optimizer, device, blank_id):
         # ==================================================
         target_ids = torch.cat(batch["target_ids"]).to(device)
 
-        input_lengths = batch["input_lengths"].to(device)
         target_lengths = batch["target_lengths"].to(device)
 
         # ==================================================
@@ -251,13 +259,21 @@ def validate(model, dataloader, criterion, device, blank_id):
 
         gloss_ids = batch["gloss_ids"].to(device)
         text_attention_mask = batch["text_attention_mask"].to(device)
+        input_lengths = batch["input_lengths"].to(device)
 
         outputs = model(
-            lh_pose, rh_pose, lh_rgb, rh_rgb, face, body, gloss_ids, text_attention_mask
+            lh_pose,
+            rh_pose,
+            lh_rgb,
+            rh_rgb,
+            face,
+            body,
+            gloss_ids,
+            text_attention_mask,
+            input_lengths,
         )
 
         target_ids = torch.cat(batch["target_ids"]).to(device)
-        input_lengths = batch["input_lengths"].to(device)
         target_lengths = batch["target_lengths"].to(device)
 
         loss_dict = criterion(outputs, target_ids, input_lengths, target_lengths)
@@ -314,14 +330,21 @@ def inference(model, dataloader, device, blank_id):
 
         gloss_ids = batch["gloss_ids"].to(device)
         text_attention_mask = batch["text_attention_mask"].to(device)
+        input_lengths = batch["input_lengths"].to(device)
 
         outputs = model(
-            lh_pose, rh_pose, lh_rgb, rh_rgb, face, body, gloss_ids, text_attention_mask
+            lh_pose,
+            rh_pose,
+            lh_rgb,
+            rh_rgb,
+            face,
+            body,
+            gloss_ids,
+            text_attention_mask,
+            input_lengths,
         )
 
         ctc_logits = outputs["ctc_logits"]
-
-        input_lengths = batch["input_lengths"].to(device)
 
         predictions = ctc_greedy_decode(
             logits=ctc_logits, input_lengths=input_lengths, blank_id=blank_id

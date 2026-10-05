@@ -85,6 +85,7 @@ class VisualEncoder(nn.Module):
         mlp_ratio,
         dropout,
         pre_norm,
+        pe_type,
     ):
         super().__init__()
         self.count_layer = 0

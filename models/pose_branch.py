@@ -108,10 +108,43 @@ class PoseBranch(nn.Module):
 
         self.pre_norm = cfg.model.pre_norm
 
-        # hand
+        pe_type = cfg.model.pe_type
+        self.ctc_num_classes = cfg.model.t_branch.vocab_size + 3
+
+        # ------------------------------------------------------------
+        # PROJECTION: num_joints * channels -> embed_dim
+        # ------------------------------------------------------------
+        self.lh_pose_proj = nn.Linear(
+            cfg.pose.left_hand.num_joints * cfg.pose.left_hand.channels,
+            cfg.pose.left_hand.embed_dim,
+        )
+        self.rh_pose_proj = nn.Linear(
+            cfg.pose.right_hand.num_joints * cfg.pose.right_hand.channels,
+            cfg.pose.right_hand.embed_dim,
+        )
+
+        self.face_pose_proj = (
+            nn.Linear(
+                cfg.pose.face.num_joints * cfg.pose.face.channels,
+                cfg.pose.face.embed_dim,
+            )
+            if self.use_face_pose
+            else None
+        )
+
+        self.body_pose_proj = (
+            nn.Linear(
+                cfg.pose.body.num_joints * cfg.pose.body.channels,
+                cfg.pose.body.embed_dim,
+            )
+            if self.use_body_pose
+            else None
+        )
+
+        # ------------------------------------------------------------
+        # ENCODER
+        # ------------------------------------------------------------
         self.hand_encoder = HandEncoder(
-            hand_pose_input_dim=cfg.pose.left_hand.num_joints
-            * cfg.pose.left_hand.channels,
             pose_embed_dim=cfg.pose.left_hand.embed_dim,
             pose_num_heads=cfg.pose.left_hand.num_heads,
             rgb_image_size=cfg.rgb.image_size,
@@ -127,12 +160,11 @@ class PoseBranch(nn.Module):
             mlp_ratio=cfg.model.mlp_ratio,
             use_rgb=cfg.model.use_rgb,
             pre_norm=self.pre_norm,
+            pe_type=pe_type,
         )
 
-        # face
         self.face_encoder = (
             PoseEncoder(
-                in_dim=cfg.pose.face.num_joints * cfg.pose.face.channels,
                 embed_dim=cfg.pose.face.embed_dim,
                 num_heads=cfg.pose.face.num_heads,
                 depth=cfg.model.p_branch.depth,
@@ -141,15 +173,14 @@ class PoseBranch(nn.Module):
                 act=str(cfg.model.act),
                 max_frames=cfg.dataset.max_frames,
                 pre_norm=self.pre_norm,
+                pe_type=pe_type,
             )
-            if cfg.pose.face.enabled
+            if self.use_face_pose
             else None
         )
 
-        # body
         self.body_encoder = (
             PoseEncoder(
-                in_dim=cfg.pose.body.num_joints * cfg.pose.body.channels,
                 embed_dim=cfg.pose.body.embed_dim,
                 num_heads=cfg.pose.body.num_heads,
                 depth=cfg.model.p_branch.depth,
@@ -158,16 +189,24 @@ class PoseBranch(nn.Module):
                 act=str(cfg.model.act),
                 max_frames=cfg.dataset.max_frames,
                 pre_norm=self.pre_norm,
+                pe_type=pe_type,
             )
-            if cfg.pose.body.enabled
+            if self.use_body_pose
             else None
         )
+
+        # ------------------------------------------------------------
+        #
+        # ------------------------------------------------------------
         self.full_pose_dim = cfg.pose.left_hand.embed_dim * 2
         if cfg.pose.face.enabled:
             self.full_pose_dim += cfg.pose.face.embed_dim
         if cfg.pose.body.enabled:
             self.full_pose_dim += cfg.pose.body.embed_dim
 
+        # ------------------------------------------------------------
+        # MAMBA
+        # ------------------------------------------------------------
         self.mamba = MambaPoseEncoder(
             input_dim=self.full_pose_dim,
             embed_dim=cfg.model.p_branch.embed_dim,
@@ -179,13 +218,43 @@ class PoseBranch(nn.Module):
             pre_norm=cfg.model.pre_norm,
         )
 
-    def forward(self, lh_pose, rh_pose, lh_rgb=None, rh_rgb=None, face=None, body=None):
+        # ------------------------------------------------------------
+        #
+        # ------------------------------------------------------------
+        self.ctc_head = nn.Linear(cfg.model.p_branch.embed_dim, self.ctc_num_classes)
+
+        self.final_proj = nn.Linear(
+            cfg.model.p_branch.embed_dim, cfg.model.p_branch.proj_dim
+        )
+
+    def forward(
+        self,
+        lh_pose,
+        rh_pose,
+        lh_rgb=None,
+        rh_rgb=None,
+        face=None,
+        body=None,
+        input_frames=None,
+    ):
         # (B, L, J, 2) -> (B, L, J*2)
         lh_pose = lh_pose.flatten(start_dim=-2)
         rh_pose = rh_pose.flatten(start_dim=-2)
         face = face.flatten(start_dim=-2) if face is not None else None
         body = body.flatten(start_dim=-2) if body is not None else None
 
+        # ------------------------------------------------------------
+        # PROJECTION: num_joints * channels -> embed_dim
+        # ------------------------------------------------------------
+        lh_pose = self.lh_pose_proj(lh_pose)
+        rh_pose = self.rh_pose_proj(rh_pose)
+
+        face = self.face_pose_proj(face) if self.face_pose_proj is not None else face
+        body = self.body_pose_proj(body) if self.body_pose_proj is not None else body
+
+        # ------------------------------------------------------------
+        # ENCODER
+        # ------------------------------------------------------------
         lh_pose, rh_pose = self.hand_encoder(lh_pose, rh_pose, lh_rgb, rh_rgb)
 
         if (self.face_encoder is not None) and (face is not None):
@@ -194,18 +263,62 @@ class PoseBranch(nn.Module):
         if (self.body_encoder is not None) and (body is not None):
             body = self.body_encoder(body)
 
-        # Concat
+        # ------------------------------------------------------------
+        # CONCAT
+        # ------------------------------------------------------------
         features = [lh_pose, rh_pose]
         if face is not None:
             features.append(face)
 
         if body is not None:
             features.append(body)
-
         fused = torch.cat(features, dim=-1)
 
-        output = self.mamba.forward(fused)
+        # ------------------------------------------------------------
+        # MAMBA
+        # ------------------------------------------------------------
+        pose_features = self.mamba.forward(fused)
 
-        # output = self.projection(output)  # (B, T, embed_dim)
+        # CTC logits
+        ctc_logits = self.ctc_head(pose_features)  # [B,L,num_classes]
 
-        return output
+        pose_features = self.masked_mean_pooling(pose_features, input_frames)  # [B,L,D]
+        pose_features = self.final_proj(pose_features)  # [B, proj_D]
+
+        return ctc_logits, pose_features
+
+    def masked_mean_pooling(self, x, lengths) -> torch.Tensor:
+        """
+        Masked Mean Pooling theo temporal dimension.
+
+        Args:
+            x:
+                Tensor shape [B, L, D]
+            lengths:
+                Tensor shape [B], số frame hợp lệ của mỗi sample.
+
+        Returns:
+            pooled:
+                Tensor shape [B, D]
+        """
+        B, L, D = x.shape
+
+        # [L]
+        frame_idx = torch.arange(L, device=x.device)
+
+        # [B, L]
+        mask = frame_idx.unsqueeze(0) < lengths.unsqueeze(1)
+
+        # [B, L, 1]
+        mask = mask.unsqueeze(-1).to(x.dtype)
+
+        # Tổng các frame hợp lệ
+        summed = (x * mask).sum(dim=1)  # [B, D]
+
+        # Số frame hợp lệ
+        count = mask.sum(dim=1).clamp_min(1.0)  # [B, 1]
+
+        # Mean
+        pooled = summed / count
+
+        return pooled  # [B, D]

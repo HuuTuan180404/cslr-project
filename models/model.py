@@ -10,19 +10,17 @@ from models.utils import get_activation
 from models.mlp import MLP
 
 
-class DualBranchCSLRModel(nn.Module):
+class CSLR(nn.Module):
     def __init__(self, cfg):
         super().__init__()
 
         self.config = cfg
-        dropout = cfg.model.dropout
-        act = cfg.model.act
 
         # ------------------------------------------------------------
-        # 1. Image branch
+        # 1. Pose branch
         # ------------------------------------------------------------
-        self.image_encoder = PoseBranch(cfg)
-        self.full_pose_dim = self.image_encoder.full_pose_dim
+        self.pose_branch = PoseBranch(cfg)
+        self.full_pose_dim = self.pose_branch.full_pose_dim
 
         # ------------------------------------------------------------
         # 2. Text branch
@@ -37,24 +35,14 @@ class DualBranchCSLRModel(nn.Module):
         # ------------------------------------------------------------
         # 3. Projection head cho visual branch
         # ------------------------------------------------------------
-        self.image_proj = MLP(
-            in_dim=cfg.model.p_branch.embed_dim,
-            mlp_ratio=2,
-            act=act,
-            dropout=dropout,
-            out_dim=cfg.model.p_branch.proj_dim,
+        self.pose_proj = nn.Linear(
+            cfg.model.p_branch.embed_dim, cfg.model.p_branch.proj_dim
         )
 
         # ------------------------------------------------------------
         # 4. Classifier / fusion head (phác thảo)
         # ------------------------------------------------------------
-        self.ctc_logits = MLP(
-            in_dim=cfg.model.p_branch.embed_dim,
-            mlp_ratio=2,
-            act=act,
-            dropout=dropout,
-            out_dim=self.ctc_num_classes,
-        )
+        self.ctc_logits = nn.Linear(cfg.model.p_branch.embed_dim, self.ctc_num_classes)
 
         self.contrastive_logit_scale = nn.Parameter(
             torch.log(torch.tensor(1 / cfg.loss.contrastive.temperature))
@@ -70,40 +58,37 @@ class DualBranchCSLRModel(nn.Module):
         body=None,
         gloss_ids=None,
         text_attention_mask=None,
+        input_frames=None,
     ):
         # ------------------------------------------------------------
         # 1. Visual features
         # ------------------------------------------------------------
-        image_features = self.image_encoder.forward(
-            lh_pose, rh_pose, lh_rgb, rh_rgb, face, body
-        )  # (B, T, embed_dim)
-        ctc_logits = self.ctc_logits(image_features)
-
-        # Pool temporal dimension để lấy biểu diễn toàn video
-        image_context = image_features.mean(dim=1)  # [B, D_img]
-        z_img = self.image_proj(image_context)  # [B, proj_dim]
-        z_img = F.normalize(z_img, dim=-1)
+        ctc_logits, pose_features = self.pose_branch.forward(
+            lh_pose, rh_pose, lh_rgb, rh_rgb, face, body, input_frames
+        )  # (B, T, num_classes), [B, proj_D]
 
         # ------------------------------------------------------------
         # 2. Text features
         # ------------------------------------------------------------
         z_text = None
         if gloss_ids is not None and text_attention_mask is not None:
-            text_dict = self.text_encoder.forward(
+            z_text = self.text_encoder.forward(
                 input_ids=gloss_ids, attention_mask=text_attention_mask
-            )
-            z_text = text_dict["z_text"]  # [B, proj_text]
+            )  # [B, proj_D]
+
+        # ------------------------------------------------------------
+        # normalize
+        # ------------------------------------------------------------
+        z_pose = F.normalize(pose_features, dim=-1)
+        z_text = F.normalize(z_text, dim=-1) if z_text is not None else z_text
 
         contrastive_logits = None
         if z_text is not None:
-            similarity = z_img @ z_text.T
+            similarity = z_pose @ z_text.T
             contrastive_logits = similarity * self.contrastive_logit_scale.exp()
 
-        return {
-            "contrastive_logits": contrastive_logits,
-            "ctc_logits": ctc_logits,
-        }
+        return {"contrastive_logits": contrastive_logits, "ctc_logits": ctc_logits}
 
 
 # Alias ngắn gọn để tiện import
-CSLRModel = DualBranchCSLRModel
+CSLRModel = CSLR
