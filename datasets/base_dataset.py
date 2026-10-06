@@ -40,7 +40,7 @@ class BaseSignLanguageDataset(Dataset, ABC):
 
     SUPPORTED_PHASES = {"train", "dev", "test"}
 
-    def __init__(self, config, phase: str, vocab=None):
+    def __init__(self, cfg, phase: str, vocab=None):
         """
         Args:
             root:
@@ -68,26 +68,27 @@ class BaseSignLanguageDataset(Dataset, ABC):
         """
 
         super().__init__()
-        self.config = config
+        self.config = cfg
         self.phase = phase
 
-        self.data_root = Path(config.dataset.root)
-        self.benchmark = config.dataset.benchmark
-        self.metadata_dir = Path(config.dataset.metadata_root)
-        self.use_rgb = config.dataset.use_rgb
+        self.data_root = Path(cfg.dataset.root)
+        self.benchmark = cfg.dataset.benchmark
+        self.metadata_dir = Path(cfg.dataset.metadata_root)
+        self.use_rgb = cfg.dataset.use_rgb
+        self.is_augment = bool(phase == "train" and cfg.pose.augmentation)
 
         self._validate()
 
-        self.pose_transform = config.pose.transform
-        self.pose_normalize = config.pose.normalize
-        self.pose_augmentation = config.pose.augmentation
-        self.pose_extention = config.pose.format
+        self.pose_transform = cfg.pose.transform
+        self.pose_normalize = cfg.pose.normalize
+        self.pose_augmentation = cfg.pose.augmentation
+        self.pose_extention = cfg.pose.format
 
-        self.rgb_transform = config.rgb.transform
-        self.rgb_normalize = config.rgb.normalize
-        self.rgb_augmentation = config.rgb.augmentation
-        self.rgb_extention = config.rgb.format
-        self.image_size = config.rgb.image_size
+        self.rgb_transform = cfg.rgb.transform
+        self.rgb_normalize = cfg.rgb.normalize
+        self.rgb_augmentation = cfg.rgb.augmentation
+        self.rgb_extention = cfg.rgb.format
+        self.image_size = cfg.rgb.image_size
 
         # Metadata sẽ được load bởi class con
         self.metadata = self._load_metadata()
