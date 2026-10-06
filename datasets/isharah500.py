@@ -3,6 +3,7 @@
 from pathlib import Path
 from typing import Any, Dict
 import warnings
+from random import randrange
 
 import cv2
 import pickle
@@ -10,6 +11,12 @@ import numpy as np
 import pandas as pd
 
 from .base_dataset import BaseSignLanguageDataset
+from datasets.augmentations import (
+    small_rotation,
+    gaussian_jitter,
+    generate_temporal_indices,
+    temporal_resample,
+)
 
 """
 Pose Data Format
@@ -84,7 +91,7 @@ class ISharah500Dataset(BaseSignLanguageDataset):
     """iSharah500 dataset built on :class:`BaseSignLanguageDataset`."""
 
     def __init__(self, config: Any, phase: str, vocab=None):
-        super().__init__(config=config, phase=phase, vocab=vocab)
+        super().__init__(cfg=config, phase=phase, vocab=vocab)
 
     def _load_pose(self, path: Path) -> Dict[str, np.ndarray]:
         _key = "keypoints"
@@ -93,13 +100,37 @@ class ISharah500Dataset(BaseSignLanguageDataset):
             pose_data = pickle.load(file)
 
         pose_data = pose_data[_key]
+        rh = pose_data[:, 0:21, :]
+        lh = pose_data[:, 21:42, :]
+        fa = pose_data[:, 42:61, :]
+        bo = pose_data[:, 61:, :]
 
-        pose = {
-            "right": pose_data[:, 0:21, :],
-            "left": pose_data[:, 21:42, :],
-            "face": pose_data[:, 42:61, :],
-            "body": pose_data[:, 61:, :],
-        }
+        if self.is_augment:
+            selected_aug = randrange(3)
+            if selected_aug == 0:  # Gaussian Jitter
+                rh = gaussian_jitter(rh, std=0.003)
+                lh = gaussian_jitter(lh, std=0.003)
+                fa = gaussian_jitter(fa, std=0.003)
+                bo = gaussian_jitter(bo, std=0.003)
+
+            if selected_aug == 1:  # Same rotation for all streams
+                angle = np.random.uniform(-5, 5)
+
+                rh = small_rotation(rh, angle)
+                lh = small_rotation(lh, angle)
+                fa = small_rotation(fa, angle)
+                bo = small_rotation(bo, angle)
+
+            if selected_aug == 2:  # Temporal Resampling
+                T = rh.shape[0]
+                temporal_indices = generate_temporal_indices(T)
+
+                rh = temporal_resample(rh, temporal_indices)
+                lh = temporal_resample(lh, temporal_indices)
+                fa = temporal_resample(fa, temporal_indices)
+                bo = temporal_resample(bo, temporal_indices)
+
+        pose = {"right": rh, "left": lh, "face": fa, "body": bo}
 
         return pose
 
