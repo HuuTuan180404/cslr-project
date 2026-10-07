@@ -369,6 +369,17 @@ def inference(model, dataloader, device, blank_id):
     return wer, all_predictions, all_targets
 
 
+def get_status(old, new):
+    if old > new:
+        status = "⬇️"
+    elif old < new:
+        status = "⬆️"
+    else:
+        status = "↔️"
+
+    return status
+
+
 def main(cfg_path: str):
     cfg = load_config(cfg_path)
 
@@ -383,6 +394,11 @@ def main(cfg_path: str):
     num_epochs = cfg.training.epochs
 
     best_dev_wer = float("inf")
+
+    pre_train_loss = float("inf")
+    pre_train_wer = float("inf")
+    pre_dev_loss = float("inf")
+    pre_dev_wer = float("inf")
 
     history = {
         "train_loss": [],
@@ -488,19 +504,19 @@ def main(cfg_path: str):
             )
             logger.info(
                 f"Epoch [{epoch:03d}/{num_epochs:03d}] "
-                f"| Train Loss: {train_loss:.4f} "
-                f"| Train WER: {train_wer * 100:.2f}% "
-                f"| Val Loss: {dev_loss:.4f} "
-                f"| Val WER: {dev_wer * 100:.2f}%"
+                f"| Train Loss: {train_loss:.4f}{get_status(pre_train_loss, train_loss)}"
+                f"| Train WER: {train_wer * 100:.2f}%{get_status(pre_train_wer, train_wer)}"
+                f"| Dev Loss: {dev_loss:.4f}{get_status(pre_dev_loss, dev_loss)}"
+                f"| Dev WER: {dev_wer * 100:.2f}%{get_status(pre_dev_wer, dev_wer)}"
                 f"| → Best model saved: {save_path}"
             )
         else:
             logger.info(
                 f"Epoch [{epoch:03d}/{num_epochs:03d}] "
-                f"| Train Loss: {train_loss:.4f} "
-                f"| Train WER: {train_wer * 100:.2f}% "
-                f"| Val Loss: {dev_loss:.4f} "
-                f"| Val WER: {dev_wer * 100:.2f}%"
+                f"| Train Loss: {train_loss:.4f}{get_status(pre_train_loss, train_loss)}"
+                f"| Train WER: {train_wer * 100:.2f}%{get_status(pre_train_wer, train_wer)}"
+                f"| Dev Loss: {dev_loss:.4f}{get_status(pre_dev_loss, dev_loss)}"
+                f"| Dev WER: {dev_wer * 100:.2f}%{get_status(pre_dev_wer, dev_wer)}"
             )
 
         scheduler.step()
