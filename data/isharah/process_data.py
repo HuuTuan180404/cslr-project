@@ -5,10 +5,11 @@ import numpy as np
 from pathlib import Path
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+import random
 
 
-INPUT_DIR = Path("data/isharah500/pose")
-OUTPUT_DIR = Path("data/isharah500/normalized_pose")
+INPUT_DIR = Path("isharah500/pose")
+OUTPUT_DIR = Path("isharah500/pose")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Hand topology
@@ -182,5 +183,46 @@ def process_samples():
             pickle.dump(data, f)
 
 
+def visualize_test():
+    samples = [p for p in OUTPUT_DIR.iterdir() if p.is_file() and p.suffix == ".pkl"]
+
+    if not samples:
+        print(f"No samples found in {OUTPUT_DIR}")
+        return
+
+    # Chọn ngẫu nhiên một sample
+    sample_path = random.choice(samples)
+
+    with open(sample_path, "rb") as f:
+        data = pickle.load(f)
+
+    keypoints = np.asarray(data["keypoints"])
+
+    if keypoints.ndim != 3 or keypoints.shape[-1] != 2:
+        raise ValueError(
+            f"Expected keypoints with shape (T, J, 2), but got {keypoints.shape}"
+        )
+
+    # Chọn ngẫu nhiên một frame
+    num_frames = keypoints.shape[0]
+    frame_idx = random.randrange(num_frames)
+
+    # Chuyển frame thành dạng (J, 2)
+    frame_xy = keypoints[frame_idx]
+
+    print(f"Sample: {sample_path.name}")
+    print(f"Sequence shape: {keypoints.shape}")
+    print(f"Frame: {frame_idx + 1}/{num_frames}")
+
+    # Sử dụng hàm visualize đã có
+    render_frame_matplotlib(
+        frame_xy,
+        title=f"Normalized Pose - {sample_path.name} | "
+        f"Frame {frame_idx + 1}/{num_frames}",
+    )
+
+
 if __name__ == "__main__":
-    process_samples()
+    # process_samples()
+    while True:
+        visualize_test()
