@@ -45,3 +45,10 @@ Thumbs.db
 *.tmp
 *.temp
 *.bak
+
+data/isharah1000/pose
+data/isharah500/pose
+data/isharah500/rgb
+logs/isharah500/loss_curve.png
+logs/isharah500/loss_curve.png
+logs/isharah500/train.log
