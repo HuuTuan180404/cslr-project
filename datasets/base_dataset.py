@@ -134,19 +134,19 @@ class BaseSignLanguageDataset(Dataset, ABC):
                 └── test.csv
         """
 
-        metadata_path = self.metadata_dir / f"{self.phase}.csv"
+        metadata_path = self.metadata_dir / f"{self.phase}.txt"
 
         if not metadata_path.exists():
             raise FileNotFoundError(f"Metadata file does not exist: {metadata_path}")
 
-        metadata = pd.read_csv(metadata_path)
+        metadata = pd.read_csv(metadata_path, delimiter="|")
 
         if len(metadata) == 0:
             raise ValueError(f"Metadata is empty: {metadata_path}")
 
-        if "sample_id" not in metadata.columns:
+        if "id" not in metadata.columns:
             raise ValueError(
-                f"Metadata must contain 'sample_id' column. "
+                f"Metadata must contain 'id' column. "
                 f"Found: {list(metadata.columns)}"
             )
 
@@ -322,7 +322,7 @@ class BaseSignLanguageDataset(Dataset, ABC):
     def get_sample_id(self, index: int) -> str:
         """Lấy sample_id theo index."""
 
-        return str(self.metadata.iloc[index]["sample_id"])
+        return str(self.metadata.iloc[index]["id"])
 
     def get_metadata(self, index: int) -> pd.Series:
         """Lấy metadata của một sample."""
