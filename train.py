@@ -7,7 +7,7 @@ from tqdm import tqdm
 from pathlib import Path
 from torch.utils.data import DataLoader
 from omegaconf import OmegaConf, DictConfig
-
+import time
 from datasets.utils import cslr_collate_fn
 from datasets.isharah500 import ISharah500Dataset
 
@@ -434,6 +434,8 @@ def main(cfg_path: str):
 
     model = build_model(cfg=cfg)
     model = model.to(device)
+    total_params = sum(p.numel() for p in model.parameters())
+    logger.info(f"Total parameters: {total_params:,}")
 
     criterion = TotalLoss(cfg)
 
