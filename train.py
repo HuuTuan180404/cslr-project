@@ -10,6 +10,7 @@ from omegaconf import OmegaConf, DictConfig
 import time
 from datasets.utils import cslr_collate_fn
 from datasets.isharah500 import ISharah500Dataset
+from datasets.isharah1000 import ISharah1000Dataset
 
 from models.model import CSLRModel
 
@@ -60,9 +61,11 @@ def build_dataset(config, phase: str, vocab=None):
     dataset_name = config.dataset.benchmark.lower()
 
     if dataset_name == "isharah500":
-        pass
+        return ISharah500Dataset(config=config, phase=phase, vocab=vocab)
+    if dataset_name == "isharah1000":
+        return ISharah1000Dataset(config=config, phase=phase, vocab=vocab)
 
-    return ISharah500Dataset(config=config, phase=phase, vocab=vocab)
+    raise ValueError(f"Unsupported dataset: {dataset_name}")
 
 
 def build_dataloader(dataset, config, phase: str, collate_fn=None):
