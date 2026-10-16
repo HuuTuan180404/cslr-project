@@ -371,11 +371,11 @@ def inference(model, dataloader, device, blank_id):
 
 def get_status(old, new):
     if old > new:
-        status = "⬇️"
+        status = "🟢"
     elif old < new:
-        status = "⬆️"
+        status = "🔴"
     else:
-        status = "↔️"
+        status = "🟡"
 
     return status
 
