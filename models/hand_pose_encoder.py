@@ -73,6 +73,7 @@ class HandEncoder(nn.Module):
                 mlp_ratio=mlp_ratio,
                 dropout=dropout,
                 pre_norm=pre_norm,
+                pe_type=pe_type,
             )
             if use_rgb
             else None
@@ -90,6 +91,7 @@ class HandEncoder(nn.Module):
                 mlp_ratio=mlp_ratio,
                 dropout=dropout,
                 pre_norm=pre_norm,
+                pe_type=pe_type,
             )
             if use_rgb
             else None
