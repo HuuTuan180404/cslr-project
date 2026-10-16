@@ -459,13 +459,20 @@ def main(cfg_path: str):
         logger.info("Start training")
 
     for epoch in range(start_epoch, num_epochs + 1):
+        train_start = time.perf_counter()
+
         train_loss, train_wer = train_one_epoch(
             model, train_loader, criterion, optimizer, device, train_set.blank_id
         )
 
+        train_time = time.perf_counter() - train_start
+        dev_start = time.perf_counter()
+
         dev_loss, dev_wer = validate(
             model, dev_loader, criterion, device, train_set.blank_id
         )
+
+        dev_time = time.perf_counter() - dev_start
 
         history["train_loss"].append(train_loss)
         history["train_wer"].append(train_wer)
@@ -508,6 +515,8 @@ def main(cfg_path: str):
                 f"| Train WER: {train_wer * 100:7.2f}%{get_status(pre_train_wer, train_wer)}"
                 f"| Dev Loss: {dev_loss:7.4f}{get_status(pre_dev_loss, dev_loss)}"
                 f"| Dev WER: {dev_wer * 100:7.2f}%{get_status(pre_dev_wer, dev_wer)}"
+                f"| Train Time: {train_time:.2f}s | "
+                f"| Dev Time: {dev_time:.2f}s"
                 f"| → Best model saved: {save_path}"
             )
         else:
@@ -517,6 +526,8 @@ def main(cfg_path: str):
                 f"| Train WER: {train_wer * 100:7.2f}%{get_status(pre_train_wer, train_wer)}"
                 f"| Dev Loss: {dev_loss:7.4f}{get_status(pre_dev_loss, dev_loss)}"
                 f"| Dev WER: {dev_wer * 100:7.2f}%{get_status(pre_dev_wer, dev_wer)}"
+                f"| Train Time: {train_time:.2f}s | "
+                f"| Dev Time: {dev_time:.2f}s"
             )
 
         pre_train_loss = train_loss
