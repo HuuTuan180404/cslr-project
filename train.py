@@ -516,10 +516,10 @@ def main(cfg_path: str):
             )
             logger.info(
                 f"Epoch [{epoch:03d}/{num_epochs:03d}] "
-                f"| Train Loss: {train_loss:7.4f}{get_status(pre_train_loss, train_loss)}"
-                f"| Train WER: {train_wer * 100:7.2f}%{get_status(pre_train_wer, train_wer)}"
-                f"| Dev Loss: {dev_loss:7.4f}{get_status(pre_dev_loss, dev_loss)}"
-                f"| Dev WER: {dev_wer * 100:7.2f}%{get_status(pre_dev_wer, dev_wer)}"
+                f"| Train Loss: {train_loss:6.4f}{get_status(pre_train_loss, train_loss)}"
+                f"| Train WER: {train_wer * 100:6.2f}%{get_status(pre_train_wer, train_wer)}"
+                f"| Dev Loss: {dev_loss:6.4f}{get_status(pre_dev_loss, dev_loss)}"
+                f"| Dev WER: {dev_wer * 100:6.2f}%{get_status(pre_dev_wer, dev_wer)}"
                 # f"| Train Time: {train_time:.2f}s | "
                 # f"| Dev Time: {dev_time:.2f}s"
                 f"| → Best model saved: {save_path}"
@@ -527,10 +527,10 @@ def main(cfg_path: str):
         else:
             logger.info(
                 f"Epoch [{epoch:03d}/{num_epochs:03d}] "
-                f"| Train Loss: {train_loss:7.4f}{get_status(pre_train_loss, train_loss)}"
-                f"| Train WER: {train_wer * 100:7.2f}%{get_status(pre_train_wer, train_wer)}"
-                f"| Dev Loss: {dev_loss:7.4f}{get_status(pre_dev_loss, dev_loss)}"
-                f"| Dev WER: {dev_wer * 100:7.2f}%{get_status(pre_dev_wer, dev_wer)}"
+                f"| Train Loss: {train_loss:6.4f}{get_status(pre_train_loss, train_loss)}"
+                f"| Train WER: {train_wer * 100:6.2f}%{get_status(pre_train_wer, train_wer)}"
+                f"| Dev Loss: {dev_loss:6.4f}{get_status(pre_dev_loss, dev_loss)}"
+                f"| Dev WER: {dev_wer * 100:6.2f}%{get_status(pre_dev_wer, dev_wer)}"
                 # f"| Train Time: {train_time:.2f}s | "
                 # f"| Dev Time: {dev_time:.2f}s"
             )
