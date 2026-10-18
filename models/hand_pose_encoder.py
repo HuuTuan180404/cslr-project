@@ -6,6 +6,8 @@ from .rgb_encoder import VisualEncoder
 from models.mlp import MLP
 from .attention import CrossAttention
 
+from models.positional_encoding import PositionalEncoding
+
 
 class HandEncoder(nn.Module):
     """
@@ -36,9 +38,16 @@ class HandEncoder(nn.Module):
         use_rgb,
         pre_norm,
         pe_type,
+        max_frames,
     ):
-
         super().__init__()
+
+        self.lh_pe = PositionalEncoding(
+            pe_type=pe_type, d_model=pose_embed_dim, max_len=max_frames
+        )
+        self.rh_pe = PositionalEncoding(
+            pe_type=pe_type, d_model=pose_embed_dim, max_len=max_frames
+        )
 
         self.layers = nn.ModuleList(
             [
@@ -98,6 +107,9 @@ class HandEncoder(nn.Module):
         )
 
     def forward(self, lh_pose, rh_pose, lh_rgb, rh_rgb):
+
+        lh_pose = self.lh_pe(lh_pose)
+        rh_pose = self.rh_pe(rh_pose)
 
         for layer in self.layers:
             if self.lh_rgb is not None:
