@@ -161,6 +161,7 @@ class PoseBranch(nn.Module):
             use_rgb=cfg.model.use_rgb,
             pre_norm=self.pre_norm,
             pe_type=pe_type,
+            max_frames=cfg.dataset.max_frames,
         )
 
         self.face_encoder = (
