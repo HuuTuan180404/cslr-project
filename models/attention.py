@@ -70,42 +70,29 @@ class CrossAttention(nn.Module):
     def __init__(self, x_dim, y_dim, num_heads, dropout, **kwargs):
         super().__init__()
 
-        d_model = (x_dim + y_dim) // 2
-
-        if d_model % num_heads != 0:
+        if x_dim % num_heads != 0 or y_dim % num_heads != 0:
             raise ValueError(
-                f"d_model ({d_model}) must be divisible by num_heads ({num_heads})."
+                f"d_model ({x_dim}) must be divisible by num_heads ({num_heads})."
             )
 
-        self.x_proj = nn.Identity() if x_dim == d_model else nn.Linear(x_dim, d_model)
-        self.y_proj = nn.Identity() if y_dim == d_model else nn.Linear(y_dim, d_model)
+        if y_dim % num_heads != 0:
+            raise ValueError(
+                f"d_model ({y_dim}) must be divisible by num_heads ({num_heads})."
+            )
 
         self.x_to_y_cross_attn = nn.MultiheadAttention(
-            embed_dim=d_model, num_heads=num_heads, dropout=dropout, batch_first=True
+            embed_dim=x_dim, num_heads=num_heads, dropout=dropout, batch_first=True
         )
         self.y_to_x_cross_attn = nn.MultiheadAttention(
-            embed_dim=d_model, num_heads=num_heads, dropout=dropout, batch_first=True
-        )
-
-        self.x_proj_out = (
-            nn.Identity() if d_model == x_dim else nn.Linear(d_model, x_dim)
-        )
-        self.y_proj_out = (
-            nn.Identity() if d_model == y_dim else nn.Linear(d_model, y_dim)
+            embed_dim=x_dim, num_heads=num_heads, dropout=dropout, batch_first=True
         )
 
     def forward(self, x, y) -> Tuple[torch.Tensor, torch.Tensor]:
         # x: (B, Tx, x_dim)
         # y: (B, Ty, y_dim)
 
-        x_proj = self.x_proj(x)
-        y_proj = self.y_proj(y)
-
-        x_cross, _ = self.x_to_y_cross_attn(x_proj, y_proj, y_proj)
-        y_cross, _ = self.y_to_x_cross_attn(y_proj, x_proj, x_proj)
-
-        x_out = self.x_proj_out(x_cross)
-        y_out = self.y_proj_out(y_cross)
+        x_out, _ = self.x_to_y_cross_attn(x, y, y)
+        y_out, _ = self.y_to_x_cross_attn(y, x, x)
 
         return x_out, y_out
 
