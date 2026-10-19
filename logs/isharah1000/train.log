@@ -103,3 +103,109 @@
 2026-10-16 17:16:39 | INFO | TESTING THE BEST CHECKPOINT
 2026-10-16 17:16:39 | INFO | START INFERENCE
 2026-10-16 17:17:00 | INFO | Test WER: 33.62%
+
+2026-10-18 12:32:57 | INFO | Total parameters: 6,288,135
+2026-10-18 12:32:57 | INFO | Start training
+2026-10-18 12:36:14 | INFO | Epoch [001/100] | Train Loss: 6.7381🟢| Train WER: 100.57%🟢| Dev Loss: 6.0436🟢| Dev WER:  91.85%🟢| → Best model saved: checkpoints/isharah1000/best_model.pth
+2026-10-18 12:39:24 | INFO | Epoch [002/100] | Train Loss: 5.6368🟢| Train WER:  89.88%🟢| Dev Loss: 5.2687🟢| Dev WER:  86.90%🟢| → Best model saved: checkpoints/isharah1000/best_model.pth
+2026-10-18 12:42:30 | INFO | Epoch [003/100] | Train Loss: 5.0556🟢| Train WER:  86.46%🟢| Dev Loss: 4.8738🟢| Dev WER:  84.55%🟢| → Best model saved: checkpoints/isharah1000/best_model.pth
+2026-10-18 12:45:36 | INFO | Epoch [004/100] | Train Loss: 4.5454🟢| Train WER:  83.76%🟢| Dev Loss: 4.2519🟢| Dev WER:  80.71%🟢| → Best model saved: checkpoints/isharah1000/best_model.pth
+2026-10-18 12:48:42 | INFO | Epoch [005/100] | Train Loss: 3.9859🟢| Train WER:  79.48%🟢| Dev Loss: 3.8781🟢| Dev WER:  77.18%🟢| → Best model saved: checkpoints/isharah1000/best_model.pth
+2026-10-18 12:51:49 | INFO | Epoch [006/100] | Train Loss: 3.3863🟢| Train WER:  73.42%🟢| Dev Loss: 3.3205🟢| Dev WER:  71.05%🟢| → Best model saved: checkpoints/isharah1000/best_model.pth
+2026-10-18 12:54:53 | INFO | Epoch [007/100] | Train Loss: 2.7737🟢| Train WER:  64.98%🟢| Dev Loss: 2.9444🟢| Dev WER:  66.09%🟢| → Best model saved: checkpoints/isharah1000/best_model.pth
+2026-10-18 12:57:57 | INFO | Epoch [008/100] | Train Loss: 2.2252🟢| Train WER:  56.98%🟢| Dev Loss: 2.5967🟢| Dev WER:  60.40%🟢| → Best model saved: checkpoints/isharah1000/best_model.pth
+2026-10-18 13:01:03 | INFO | Epoch [009/100] | Train Loss: 1.7721🟢| Train WER:  49.14%🟢| Dev Loss: 2.2225🟢| Dev WER:  53.70%🟢| → Best model saved: checkpoints/isharah1000/best_model.pth
+2026-10-18 13:04:09 | INFO | Epoch [010/100] | Train Loss: 1.4346🟢| Train WER:  42.80%🟢| Dev Loss: 2.0443🟢| Dev WER:  49.89%🟢| → Best model saved: checkpoints/isharah1000/best_model.pth
+2026-10-18 13:07:09 | INFO | Epoch [011/100] | Train Loss: 1.2098🟢| Train WER:  37.19%🟢| Dev Loss: 2.0609🔴| Dev WER:  50.30%🔴
+2026-10-18 13:10:09 | INFO | Epoch [012/100] | Train Loss: 1.0119🟢| Train WER:  33.43%🟢| Dev Loss: 1.7445🟢| Dev WER:  42.67%🟢| → Best model saved: checkpoints/isharah1000/best_model.pth
+2026-10-18 13:13:09 | INFO | Epoch [013/100] | Train Loss: 0.7824🟢| Train WER:  27.52%🟢| Dev Loss: 1.7478🔴| Dev WER:  42.25%🟢| → Best model saved: checkpoints/isharah1000/best_model.pth
+2026-10-18 13:16:09 | INFO | Epoch [014/100] | Train Loss: 0.6975🟢| Train WER:  24.59%🟢| Dev Loss: 1.6220🟢| Dev WER:  39.69%🟢| → Best model saved: checkpoints/isharah1000/best_model.pth
+2026-10-18 13:19:07 | INFO | Epoch [015/100] | Train Loss: 0.5861🟢| Train WER:  21.29%🟢| Dev Loss: 1.7061🔴| Dev WER:  39.75%🔴
+2026-10-18 13:22:07 | INFO | Epoch [016/100] | Train Loss: 0.5262🟢| Train WER:  19.08%🟢| Dev Loss: 1.8902🔴| Dev WER:  40.60%🔴
+2026-10-18 13:25:07 | INFO | Epoch [017/100] | Train Loss: 0.4599🟢| Train WER:  17.28%🟢| Dev Loss: 1.9662🔴| Dev WER:  41.08%🔴
+2026-10-18 13:28:06 | INFO | Epoch [018/100] | Train Loss: 0.4128🟢| Train WER:  15.25%🟢| Dev Loss: 1.6439🟢| Dev WER:  34.91%🟢| → Best model saved: checkpoints/isharah1000/best_model.pth
+2026-10-18 13:31:06 | INFO | Epoch [019/100] | Train Loss: 0.3625🟢| Train WER:  14.06%🟢| Dev Loss: 1.7365🔴| Dev WER:  36.27%🔴
+2026-10-18 13:34:05 | INFO | Epoch [020/100] | Train Loss: 0.3253🟢| Train WER:  12.51%🟢| Dev Loss: 1.7672🔴| Dev WER:  35.31%🟢
+2026-10-18 13:37:05 | INFO | Epoch [021/100] | Train Loss: 0.3085🟢| Train WER:  11.72%🟢| Dev Loss: 1.7099🟢| Dev WER:  35.43%🔴
+2026-10-18 13:40:04 | INFO | Epoch [022/100] | Train Loss: 0.3114🔴| Train WER:  10.58%🟢| Dev Loss: 1.5544🟢| Dev WER:  32.89%🟢| → Best model saved: checkpoints/isharah1000/best_model.pth
+2026-10-18 13:43:04 | INFO | Epoch [023/100] | Train Loss: 0.2712🟢| Train WER:  10.28%🟢| Dev Loss: 1.5641🔴| Dev WER:  30.93%🟢| → Best model saved: checkpoints/isharah1000/best_model.pth
+2026-10-18 13:46:05 | INFO | Epoch [024/100] | Train Loss: 0.3412🔴| Train WER:   9.44%🟢| Dev Loss: 1.6902🔴| Dev WER:  33.47%🔴
+2026-10-18 13:49:05 | INFO | Epoch [025/100] | Train Loss: 0.2124🟢| Train WER:   8.24%🟢| Dev Loss: 1.5222🟢| Dev WER:  30.99%🟢
+2026-10-18 13:52:04 | INFO | Epoch [026/100] | Train Loss: 0.2192🔴| Train WER:   8.53%🔴| Dev Loss: 1.5012🟢| Dev WER:  30.07%🟢| → Best model saved: checkpoints/isharah1000/best_model.pth
+2026-10-18 13:55:04 | INFO | Epoch [027/100] | Train Loss: 0.2044🟢| Train WER:   7.88%🟢| Dev Loss: 1.6830🔴| Dev WER:  31.97%🔴
+2026-10-18 13:58:03 | INFO | Epoch [028/100] | Train Loss: 0.1845🟢| Train WER:   7.11%🟢| Dev Loss: 1.8117🔴| Dev WER:  33.24%🔴
+2026-10-18 14:01:02 | INFO | Epoch [029/100] | Train Loss: 0.1743🟢| Train WER:   6.65%🟢| Dev Loss: 1.6188🟢| Dev WER:  31.37%🟢
+2026-10-18 14:04:02 | INFO | Epoch [030/100] | Train Loss: 0.1663🟢| Train WER:   6.50%🟢| Dev Loss: 1.7587🔴| Dev WER:  31.20%🟢
+2026-10-18 14:07:02 | INFO | Epoch [031/100] | Train Loss: 0.1643🟢| Train WER:   6.23%🟢| Dev Loss: 1.4531🟢| Dev WER:  29.45%🟢| → Best model saved: checkpoints/isharah1000/best_model.pth
+2026-10-18 14:10:02 | INFO | Epoch [032/100] | Train Loss: 0.2184🔴| Train WER:   5.76%🟢| Dev Loss: 1.3273🟢| Dev WER:  25.96%🟢| → Best model saved: checkpoints/isharah1000/best_model.pth
+2026-10-18 14:13:03 | INFO | Epoch [033/100] | Train Loss: 0.1302🟢| Train WER:   4.98%🟢| Dev Loss: 1.3878🔴| Dev WER:  26.78%🔴
+2026-10-18 14:16:03 | INFO | Epoch [034/100] | Train Loss: 0.1342🔴| Train WER:   5.04%🔴| Dev Loss: 1.4182🔴| Dev WER:  26.88%🔴
+2026-10-18 14:19:03 | INFO | Epoch [035/100] | Train Loss: 0.1283🟢| Train WER:   4.89%🟢| Dev Loss: 1.3820🟢| Dev WER:  24.80%🟢| → Best model saved: checkpoints/isharah1000/best_model.pth
+2026-10-18 14:22:05 | INFO | Epoch [036/100] | Train Loss: 0.1163🟢| Train WER:   4.45%🟢| Dev Loss: 1.6649🔴| Dev WER:  29.18%🔴
+2026-10-18 14:25:04 | INFO | Epoch [037/100] | Train Loss: 0.1157🟢| Train WER:   4.39%🟢| Dev Loss: 1.5126🟢| Dev WER:  27.99%🟢
+2026-10-18 14:28:05 | INFO | Epoch [038/100] | Train Loss: 0.1066🟢| Train WER:   4.02%🟢| Dev Loss: 1.3332🟢| Dev WER:  24.90%🟢
+2026-10-18 14:31:06 | INFO | Epoch [039/100] | Train Loss: 0.1039🟢| Train WER:   4.05%🔴| Dev Loss: 1.5387🔴| Dev WER:  29.13%🔴
+2026-10-18 14:34:06 | INFO | Epoch [040/100] | Train Loss: 0.0923🟢| Train WER:   3.62%🟢| Dev Loss: 1.3965🟢| Dev WER:  26.30%🟢
+2026-10-18 14:37:05 | INFO | Epoch [041/100] | Train Loss: 0.0865🟢| Train WER:   3.34%🟢| Dev Loss: 1.4924🔴| Dev WER:  26.69%🔴
+2026-10-18 14:40:06 | INFO | Epoch [042/100] | Train Loss: 0.0867🔴| Train WER:   3.32%🟢| Dev Loss: 1.6982🔴| Dev WER:  30.24%🔴
+2026-10-18 14:43:06 | INFO | Epoch [043/100] | Train Loss: 0.0785🟢| Train WER:   3.06%🟢| Dev Loss: 1.3784🟢| Dev WER:  24.82%🟢
+2026-10-18 14:46:06 | INFO | Epoch [044/100] | Train Loss: 0.0772🟢| Train WER:   2.85%🟢| Dev Loss: 1.5044🔴| Dev WER:  25.86%🔴
+2026-10-18 14:49:07 | INFO | Epoch [045/100] | Train Loss: 0.0681🟢| Train WER:   2.73%🟢| Dev Loss: 1.3959🟢| Dev WER:  24.71%🟢| → Best model saved: checkpoints/isharah1000/best_model.pth
+2026-10-18 14:52:07 | INFO | Epoch [046/100] | Train Loss: 0.0643🟢| Train WER:   2.59%🟢| Dev Loss: 1.4511🔴| Dev WER:  25.03%🔴
+2026-10-18 14:55:08 | INFO | Epoch [047/100] | Train Loss: 0.0609🟢| Train WER:   2.33%🟢| Dev Loss: 1.4606🔴| Dev WER:  24.84%🟢
+2026-10-18 14:58:08 | INFO | Epoch [048/100] | Train Loss: 0.0602🟢| Train WER:   2.34%🔴| Dev Loss: 1.3483🟢| Dev WER:  23.21%🟢| → Best model saved: checkpoints/isharah1000/best_model.pth
+2026-10-18 15:01:09 | INFO | Epoch [049/100] | Train Loss: 0.0533🟢| Train WER:   2.21%🟢| Dev Loss: 1.2985🟢| Dev WER:  23.36%🔴
+2026-10-18 15:04:10 | INFO | Epoch [050/100] | Train Loss: 0.0553🔴| Train WER:   2.13%🟢| Dev Loss: 1.4536🔴| Dev WER:  24.25%🔴
+2026-10-18 15:07:10 | INFO | Epoch [051/100] | Train Loss: 0.0535🟢| Train WER:   1.92%🟢| Dev Loss: 1.3093🟢| Dev WER:  23.67%🟢
+2026-10-18 15:10:11 | INFO | Epoch [052/100] | Train Loss: 0.0508🟢| Train WER:   1.96%🔴| Dev Loss: 1.2467🟢| Dev WER:  22.61%🟢| → Best model saved: checkpoints/isharah1000/best_model.pth
+2026-10-18 15:13:11 | INFO | Epoch [053/100] | Train Loss: 0.0451🟢| Train WER:   1.73%🟢| Dev Loss: 1.4753🔴| Dev WER:  24.32%🔴
+2026-10-18 15:16:10 | INFO | Epoch [054/100] | Train Loss: 0.0419🟢| Train WER:   1.62%🟢| Dev Loss: 1.3742🟢| Dev WER:  22.63%🟢
+2026-10-18 15:19:11 | INFO | Epoch [055/100] | Train Loss: 0.0409🟢| Train WER:   1.57%🟢| Dev Loss: 1.2963🟢| Dev WER:  22.09%🟢| → Best model saved: checkpoints/isharah1000/best_model.pth
+2026-10-18 15:22:12 | INFO | Epoch [056/100] | Train Loss: 0.0369🟢| Train WER:   1.41%🟢| Dev Loss: 1.4573🔴| Dev WER:  23.84%🔴
+2026-10-18 15:25:11 | INFO | Epoch [057/100] | Train Loss: 0.0349🟢| Train WER:   1.36%🟢| Dev Loss: 1.3420🟢| Dev WER:  22.54%🟢
+2026-10-18 15:28:12 | INFO | Epoch [058/100] | Train Loss: 0.0311🟢| Train WER:   1.20%🟢| Dev Loss: 1.3629🔴| Dev WER:  22.71%🔴
+2026-10-18 15:31:12 | INFO | Epoch [059/100] | Train Loss: 0.0325🔴| Train WER:   1.22%🔴| Dev Loss: 1.3378🟢| Dev WER:  21.77%🟢| → Best model saved: checkpoints/isharah1000/best_model.pth
+2026-10-18 15:34:13 | INFO | Epoch [060/100] | Train Loss: 0.0303🟢| Train WER:   1.15%🟢| Dev Loss: 1.2630🟢| Dev WER:  21.06%🟢| → Best model saved: checkpoints/isharah1000/best_model.pth
+2026-10-18 15:37:13 | INFO | Epoch [061/100] | Train Loss: 0.0252🟢| Train WER:   0.93%🟢| Dev Loss: 1.4065🔴| Dev WER:  22.09%🔴
+2026-10-18 15:40:12 | INFO | Epoch [062/100] | Train Loss: 0.0254🔴| Train WER:   0.97%🔴| Dev Loss: 1.3706🟢| Dev WER:  21.77%🟢
+2026-10-18 15:43:11 | INFO | Epoch [063/100] | Train Loss: 0.0230🟢| Train WER:   0.93%🟢| Dev Loss: 1.3030🟢| Dev WER:  21.08%🟢
+2026-10-18 15:46:12 | INFO | Epoch [064/100] | Train Loss: 0.0232🔴| Train WER:   0.88%🟢| Dev Loss: 1.3532🔴| Dev WER:  21.94%🔴
+2026-10-18 15:49:12 | INFO | Epoch [065/100] | Train Loss: 0.0220🟢| Train WER:   0.87%🟢| Dev Loss: 1.2563🟢| Dev WER:  20.23%🟢| → Best model saved: checkpoints/isharah1000/best_model.pth
+2026-10-18 15:52:14 | INFO | Epoch [066/100] | Train Loss: 0.0192🟢| Train WER:   0.76%🟢| Dev Loss: 1.3563🔴| Dev WER:  21.36%🔴
+2026-10-18 15:55:14 | INFO | Epoch [067/100] | Train Loss: 0.0181🟢| Train WER:   0.72%🟢| Dev Loss: 1.2567🟢| Dev WER:  20.81%🟢
+2026-10-18 15:58:14 | INFO | Epoch [068/100] | Train Loss: 0.0178🟢| Train WER:   0.68%🟢| Dev Loss: 1.2486🟢| Dev WER:  20.52%🟢
+2026-10-18 16:01:15 | INFO | Epoch [069/100] | Train Loss: 0.0162🟢| Train WER:   0.68%🔴| Dev Loss: 1.3154🔴| Dev WER:  21.50%🔴
+2026-10-18 16:04:19 | INFO | Epoch [070/100] | Train Loss: 0.0155🟢| Train WER:   0.61%🟢| Dev Loss: 1.2248🟢| Dev WER:  20.04%🟢| → Best model saved: checkpoints/isharah1000/best_model.pth
+2026-10-18 16:07:18 | INFO | Epoch [071/100] | Train Loss: 0.0142🟢| Train WER:   0.59%🟢| Dev Loss: 1.3139🔴| Dev WER:  20.21%🔴
+2026-10-18 16:10:19 | INFO | Epoch [072/100] | Train Loss: 0.0129🟢| Train WER:   0.54%🟢| Dev Loss: 1.2892🟢| Dev WER:  19.83%🟢| → Best model saved: checkpoints/isharah1000/best_model.pth
+2026-10-18 16:13:24 | INFO | Epoch [073/100] | Train Loss: 0.0119🟢| Train WER:   0.50%🟢| Dev Loss: 1.3691🔴| Dev WER:  21.33%🔴
+2026-10-18 16:16:25 | INFO | Epoch [074/100] | Train Loss: 0.0117🟢| Train WER:   0.47%🟢| Dev Loss: 1.3101🟢| Dev WER:  20.35%🟢
+2026-10-18 16:19:26 | INFO | Epoch [075/100] | Train Loss: 0.0120🔴| Train WER:   0.43%🟢| Dev Loss: 1.2197🟢| Dev WER:  19.44%🟢| → Best model saved: checkpoints/isharah1000/best_model.pth
+2026-10-18 16:22:27 | INFO | Epoch [076/100] | Train Loss: 0.0099🟢| Train WER:   0.39%🟢| Dev Loss: 1.3944🔴| Dev WER:  21.58%🔴
+2026-10-18 16:25:27 | INFO | Epoch [077/100] | Train Loss: 0.0106🔴| Train WER:   0.45%🔴| Dev Loss: 1.3061🟢| Dev WER:  20.23%🟢
+2026-10-18 16:28:27 | INFO | Epoch [078/100] | Train Loss: 0.0106🟢| Train WER:   0.36%🟢| Dev Loss: 1.3291🔴| Dev WER:  20.27%🔴
+2026-10-18 16:31:29 | INFO | Epoch [079/100] | Train Loss: 0.0089🟢| Train WER:   0.34%🟢| Dev Loss: 1.3769🔴| Dev WER:  20.71%🔴
+2026-10-18 16:34:34 | INFO | Epoch [080/100] | Train Loss: 0.0082🟢| Train WER:   0.35%🔴| Dev Loss: 1.3309🟢| Dev WER:  20.06%🟢
+2026-10-18 16:37:34 | INFO | Epoch [081/100] | Train Loss: 0.0088🔴| Train WER:   0.37%🔴| Dev Loss: 1.2874🟢| Dev WER:  19.46%🟢
+2026-10-18 16:40:37 | INFO | Epoch [082/100] | Train Loss: 0.0084🟢| Train WER:   0.33%🟢| Dev Loss: 1.3181🔴| Dev WER:  19.67%🔴
+2026-10-18 16:43:50 | INFO | Epoch [083/100] | Train Loss: 0.0076🟢| Train WER:   0.28%🟢| Dev Loss: 1.3250🔴| Dev WER:  19.90%🔴
+2026-10-18 16:47:00 | INFO | Epoch [084/100] | Train Loss: 0.0070🟢| Train WER:   0.33%🔴| Dev Loss: 1.3262🔴| Dev WER:  19.90%🟡
+2026-10-18 16:50:22 | INFO | Epoch [085/100] | Train Loss: 0.0072🔴| Train WER:   0.28%🟢| Dev Loss: 1.3651🔴| Dev WER:  19.83%🟢
+2026-10-18 16:53:28 | INFO | Epoch [086/100] | Train Loss: 0.0054🟢| Train WER:   0.24%🟢| Dev Loss: 1.3678🔴| Dev WER:  20.17%🔴
+2026-10-18 16:56:34 | INFO | Epoch [087/100] | Train Loss: 0.0058🔴| Train WER:   0.24%🟡| Dev Loss: 1.3546🟢| Dev WER:  19.81%🟢
+2026-10-18 16:59:45 | INFO | Epoch [088/100] | Train Loss: 0.0059🔴| Train WER:   0.24%🟡| Dev Loss: 1.3439🟢| Dev WER:  19.98%🔴
+2026-10-18 17:02:57 | INFO | Epoch [089/100] | Train Loss: 0.0061🔴| Train WER:   0.25%🔴| Dev Loss: 1.3302🟢| Dev WER:  19.31%🟢| → Best model saved: checkpoints/isharah1000/best_model.pth
+2026-10-18 17:06:08 | INFO | Epoch [090/100] | Train Loss: 0.0059🟢| Train WER:   0.21%🟢| Dev Loss: 1.3358🔴| Dev WER:  19.67%🔴
+2026-10-18 17:09:18 | INFO | Epoch [091/100] | Train Loss: 0.0061🔴| Train WER:   0.27%🔴| Dev Loss: 1.3446🔴| Dev WER:  19.27%🟢| → Best model saved: checkpoints/isharah1000/best_model.pth
+2026-10-18 17:12:26 | INFO | Epoch [092/100] | Train Loss: 0.0049🟢| Train WER:   0.22%🟢| Dev Loss: 1.3291🟢| Dev WER:  19.50%🔴
+2026-10-18 17:15:42 | INFO | Epoch [093/100] | Train Loss: 0.0051🔴| Train WER:   0.20%🟢| Dev Loss: 1.3177🟢| Dev WER:  19.48%🟢
+2026-10-18 17:18:50 | INFO | Epoch [094/100] | Train Loss: 0.0050🟢| Train WER:   0.20%🔴| Dev Loss: 1.3393🔴| Dev WER:  19.90%🔴
+2026-10-18 17:21:58 | INFO | Epoch [095/100] | Train Loss: 0.0041🟢| Train WER:   0.17%🟢| Dev Loss: 1.3184🟢| Dev WER:  19.37%🟢
+2026-10-18 17:25:09 | INFO | Epoch [096/100] | Train Loss: 0.0043🔴| Train WER:   0.18%🔴| Dev Loss: 1.3163🟢| Dev WER:  19.31%🟢
+2026-10-18 17:28:15 | INFO | Epoch [097/100] | Train Loss: 0.0047🔴| Train WER:   0.23%🔴| Dev Loss: 1.2953🟢| Dev WER:  19.12%🟢| → Best model saved: checkpoints/isharah1000/best_model.pth
+2026-10-18 17:31:21 | INFO | Epoch [098/100] | Train Loss: 0.0051🔴| Train WER:   0.17%🟢| Dev Loss: 1.3014🔴| Dev WER:  19.06%🟢| → Best model saved: checkpoints/isharah1000/best_model.pth
+2026-10-18 17:34:29 | INFO | Epoch [099/100] | Train Loss: 0.0052🔴| Train WER:   0.23%🔴| Dev Loss: 1.3132🔴| Dev WER:  18.96%🟢| → Best model saved: checkpoints/isharah1000/best_model.pth
+2026-10-18 17:37:35 | INFO | Epoch [100/100] | Train Loss: 0.0047🟢| Train WER:   0.20%🟢| Dev Loss: 1.3339🔴| Dev WER:  19.44%🔴
+2026-10-18 17:37:36 | INFO | TESTING THE BEST CHECKPOINT
+2026-10-18 17:37:36 | INFO | START INFERENCE
+2026-10-18 17:37:57 | INFO | Test WER: 34.20%
