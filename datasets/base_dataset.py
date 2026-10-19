@@ -146,8 +146,7 @@ class BaseSignLanguageDataset(Dataset, ABC):
 
         if "id" not in metadata.columns:
             raise ValueError(
-                f"Metadata must contain 'id' column. "
-                f"Found: {list(metadata.columns)}"
+                f"Metadata must contain 'id' column. Found: {list(metadata.columns)}"
             )
 
         return metadata
