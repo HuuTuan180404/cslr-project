@@ -51,7 +51,7 @@ class HandEncoder(nn.Module):
 
         self.layers = nn.ModuleList(
             [
-                HandEncoderLayer(
+                HandEncoderLayer_v2(
                     pose_embed_dim=pose_embed_dim,
                     pose_num_heads=pose_num_heads,
                     rgb_embed_dim=rgb_embed_dim,
