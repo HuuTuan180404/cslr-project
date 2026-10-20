@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from models.mlp import MLP
 
-from .hand_pose_encoder import HandEncoder
+from .hand_pose_encoder import HandEncoder, HandEncoder_v3
 from .pose_encoder import PoseEncoder
 
 from mamba_ssm import Mamba2
@@ -144,7 +144,7 @@ class PoseBranch(nn.Module):
         # ------------------------------------------------------------
         # ENCODER
         # ------------------------------------------------------------
-        self.hand_encoder = HandEncoder(
+        self.hand_encoder = HandEncoder_v3(
             pose_embed_dim=cfg.pose.left_hand.embed_dim,
             pose_num_heads=cfg.pose.left_hand.num_heads,
             rgb_image_size=cfg.rgb.image_size,
