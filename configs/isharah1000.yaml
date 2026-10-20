@@ -35,7 +35,7 @@ training:
 # ------------------------------------------------------------
 dataset:
   benchmark: isharah1000
-  root: ./data/${dataset.benchmark}
+  root: ./data/isharah500
   metadata_root: ./metadata/${dataset.benchmark}
 
   use_rgb: false
@@ -143,7 +143,7 @@ model:
   t_branch: # text_branch
     vocab_size: 680
     embed_dim: 256
-    depth: 2
+    depth: 4
     num_heads: 8
     proj_dim: 128
     state_dim: 16
@@ -156,7 +156,7 @@ model:
     d_state: 64 # mamba2
     conv_kernel: 3
     expand: 2
-    depth: 2
+    depth: 4
     num_heads: 8
     proj_dim: 128
 
